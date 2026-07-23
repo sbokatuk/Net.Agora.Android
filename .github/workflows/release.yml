@@ -44,6 +44,10 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      # The sample is a compile check on the public API, and the commit being tagged has already
+      # been through it on its pull request. Building it again here would put a MAUI workload
+      # install between the package being built and being published, for a result already known.
+      build-sample: false
 
   publish:
     name: publish to nuget.org and create release
@@ -89,17 +93,32 @@ jobs:
           . ./build/pins.sh
           previous=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
 
+          # A curated docs/release-notes/<version>.md replaces the generated commit list when one
+          # exists. The second lookup drops the prerelease suffix, so v4.6.3.1-beta.2 reuses the
+          # notes written for 4.6.3.1 rather than silently falling back to raw commit subjects.
+          notes="docs/release-notes/${VERSION}.md"
+          [ -f "${notes}" ] || notes="docs/release-notes/${VERSION%%-*}.md"
+
           {
-            echo "## What's changed"
-            echo
-            if [ -n "${previous}" ]; then
-              git log --no-merges --pretty='- %s (%h)' "${previous}..${GITHUB_REF_NAME}"
-              echo
-              echo "**Full changelog**: ${{ github.server_url }}/${{ github.repository }}/compare/${previous}...${GITHUB_REF_NAME}"
+            if [ -f "${notes}" ]; then
+              echo "==> using curated notes from ${notes}" >&2
+              cat "${notes}"
             else
-              echo "Initial release."
+              echo "## What's changed"
+              echo
+              if [ -n "${previous}" ]; then
+                git log --no-merges --pretty='- %s (%h)' "${previous}..${GITHUB_REF_NAME}"
+              else
+                # No previous tag: listing every commit would reach back to the repository's first
+                # commit, which is noise rather than a changelog.
+                echo "Initial release."
+              fi
             fi
             echo
+            if [ -n "${previous}" ]; then
+              echo "**Full changelog**: ${{ github.server_url }}/${{ github.repository }}/compare/${previous}...${GITHUB_REF_NAME}"
+              echo
+            fi
             echo "## Packages"
             echo
             echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\` (Maven Central)."

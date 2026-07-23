@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    INTERNET/ACCESS_NETWORK_STATE: the engine opens its signalling transport as soon as it is
+    created, even though these checks never join a channel. CAMERA/RECORD_AUDIO: EnableVideo and
+    the mute calls touch the camera and microphone even outside a channel, and without the
+    permission the SDK reports a different failure than the one these checks want to isolate — the
+    runner script grants them at install time (adb shell pm grant), since these are Android 6+
+    dangerous permissions that a manifest declaration alone does not gain.
+  -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <application android:label="Net.Agora.Android e2e" />
+</manifest>
