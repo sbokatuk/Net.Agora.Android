@@ -47,6 +47,22 @@ public static class Packages
     public static ZipArchive OpenPackage(string packageId, string extension = ".nupkg") =>
         ZipFile.OpenRead(FindPackage(packageId, extension));
 
+    /// <summary>Reads a package entry fully into memory so it can be seeked.</summary>
+    public static MemoryStream ReadEntry(ZipArchive package, string entryName)
+    {
+        var entry = package.GetEntry(entryName);
+        Assert.True(entry is not null, $"Package has no entry '{entryName}'.");
+
+        var buffer = new MemoryStream();
+        using (var stream = entry!.Open())
+        {
+            stream.CopyTo(buffer);
+        }
+
+        buffer.Position = 0;
+        return buffer;
+    }
+
     private static string ResolveArtifactsDirectory()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

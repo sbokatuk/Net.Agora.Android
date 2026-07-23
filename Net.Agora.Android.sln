@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -11,9 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Android.PackageTests", "tests\Net.Agora.Android.PackageTests\Net.Agora.Android.PackageTests.csproj", "{E6024C1E-6B4C-42C1-9BF6-8C81EB5D2724}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{6249E20F-0CA5-42AB-942D-3DDFCC43C5F6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Sample.Android", "samples\Net.Agora.Sample.Android\Net.Agora.Sample.Android.csproj", "{657C8C49-0E93-451F-BA6D-6EAB7716793B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Android.DeviceTests", "tests\Net.Agora.Android.DeviceTests\Net.Agora.Android.DeviceTests.csproj", "{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,18 +47,18 @@ Global
 		{E6024C1E-6B4C-42C1-9BF6-8C81EB5D2724}.Release|x64.Build.0 = Release|Any CPU
 		{E6024C1E-6B4C-42C1-9BF6-8C81EB5D2724}.Release|x86.ActiveCfg = Release|Any CPU
 		{E6024C1E-6B4C-42C1-9BF6-8C81EB5D2724}.Release|x86.Build.0 = Release|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Debug|x64.Build.0 = Debug|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Debug|x86.Build.0 = Debug|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Release|x64.ActiveCfg = Release|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Release|x64.Build.0 = Release|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Release|x86.ActiveCfg = Release|Any CPU
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B}.Release|x86.Build.0 = Release|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Debug|x64.Build.0 = Debug|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Debug|x86.Build.0 = Debug|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Release|x64.ActiveCfg = Release|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Release|x64.Build.0 = Release|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Release|x86.ActiveCfg = Release|Any CPU
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -68,6 +66,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{B5058E71-ADDB-4152-A0F5-60C69107EFB8} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{E6024C1E-6B4C-42C1-9BF6-8C81EB5D2724} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
-		{657C8C49-0E93-451F-BA6D-6EAB7716793B} = {6249E20F-0CA5-42AB-942D-3DDFCC43C5F6}
+		{ED47E6CD-6703-49F7-82E6-719C8AD7BBFE} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

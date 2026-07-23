@@ -1,7 +1,8 @@
 name: build
 
-# Reusable pipeline: packs every package in build/packages.tsv at a given version and validates
-# the result. Callers (pr.yml, release.yml) decide the version and what to do with it.
+# Reusable pipeline: packs every package in build/packages.tsv at a given version, validates the
+# result, builds the MAUI sample against the packed package, and runs the emulator smoke tests.
+# Callers (pr.yml, release.yml) decide the version and what to do with it.
 
 on:
   workflow_call:
@@ -10,6 +11,32 @@ on:
         description: NuGet version to stamp on every package.
         required: true
         type: string
+      e2e-target-frameworks:
+        description: >
+          Which of the package's target frameworks the emulator smoke tests run against, as a JSON
+          array. Defaults to the two extremes: net8, the oldest asset set and the one that resolves
+          its .aar through the DownloadFile fallback rather than AndroidMavenLibrary (see
+          src/Agora.Binding.props), and net10, whose assets are produced by the merge step in
+          BuildNugets.sh and so are the only ones that could be grafted in wrong. net9 sits between
+          them and comes out of the same pack pass as net8, so testing it too would buy little for
+          the runner minutes.
+        required: false
+        default: '["net8.0-android34.0", "net10.0-android36.0"]'
+        type: string
+      e2e-api-level:
+        description: Android API level the emulator smoke test boots.
+        required: false
+        default: 35
+        type: number
+      build-sample:
+        description: >
+          Whether to compile the MAUI sample against the packed package. Defaults to true, because
+          it is a verification step and a new caller should get it. Releases turn it off: by then
+          the same commit has already been through it on the pull request, and it costs a MAUI
+          workload install between the package being built and being published.
+        required: false
+        default: true
+        type: boolean
 
 env:
   DOTNET_NOLOGO: 'true'
@@ -19,6 +46,7 @@ env:
 jobs:
   pack:
     name: pack
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,15 +99,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Build the sample against the packed packages
-        run: |
-          # Proves the package is actually consumable: it restores from artifacts/ (see
-          # NuGet.config) and links against Agora.Rtc.RtcEngine directly, with no cross-platform
-          # façade in between.
-          dotnet build samples/Net.Agora.Sample.Android \
-            -f net9.0-android35.0 \
-            -p:AgoraVideoPackageVersion="${{ inputs.version }}"
-
   validate:
     name: validate packages
     needs: pack
@@ -107,5 +126,139 @@ jobs:
         with:
           name: package-test-results
           path: '**/*.trx'
+          if-no-files-found: ignore
+          retention-days: 7
+
+  sample:
+    name: build sample app
+    timeout-minutes: 30
+    needs: pack
+    if: ${{ inputs.build-sample }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The sample targets net10.0-android36.0 and so needs the .NET 10 SDK, not the .NET 9 one
+      # global.json pins — mirroring DatadogNet.Android's sample, whose reasons for building on
+      # the newest band apply here too once MAUI is involved.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install the MAUI workload for the .NET 10 band
+        run: |
+          # Workloads are installed per SDK band, and the SDK is resolved from the working
+          # directory - so this has to run from the same scratch global.json the build uses. At the
+          # repository root global.json pins .NET 9, so installing there puts maui-android on a
+          # band the build never sees, and the build fails with NETSDK1147 telling you to install a
+          # workload you just installed.
+          dir="${RUNNER_TEMP}/sample-sdk"
+          mkdir -p "${dir}"
+          ( cd "${dir}" \
+            && dotnet new globaljson \
+                 --sdk-version "$(dotnet --list-sdks | grep '^10\.' | tail -1 | cut -d' ' -f1)" --force \
+            && dotnet workload install maui-android )
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36'
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts
+
+      # The sample consumes the packed package exactly as a MAUI consumer would: it restores from
+      # artifacts/ (see NuGet.config) and links against Agora.Rtc.RtcEngine directly, so it is the
+      # only thing that checks the API is still usable the way the README documents.
+      - name: Build the sample against the packed packages
+        run: |
+          # From the same scratch directory the workload was installed into, for the same reason:
+          # the SDK - and therefore the workload set - is resolved from the working directory.
+          ( cd "${RUNNER_TEMP}/sample-sdk" \
+            && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Android/Net.Agora.Sample.Android.csproj" \
+                 --configuration Release \
+                 -p:AgoraVideoPackageVersion="${{ inputs.version }}" )
+
+  e2e:
+    name: emulator smoke test (${{ matrix.target-framework }})
+    timeout-minutes: 60
+    needs: pack
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast off: when one target framework breaks it is worth knowing whether the other did
+      # too, since "net8 only" and "both" point at very different causes.
+      fail-fast: false
+      matrix:
+        target-framework: ${{ fromJSON(inputs.e2e-target-frameworks) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # 8.0.x is here for the net8 matrix leg only - see the workload step below.
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Install Android workloads
+        run: |
+          # The device app is built for the target framework under test, and the band that owns it
+          # is decided by the *API level* rather than the .NET version - the .NET 9 band has API 34
+          # reference packs but no API 34 runtime packs, so a net8 app compiles and then fails to
+          # package. See run-emulator-tests.sh. Install all three bands' workloads so any target
+          # framework in the matrix can build.
+          for sdk in 8 9 10; do
+            version="$(dotnet --list-sdks | grep "^${sdk}\." | tail -1 | cut -d' ' -f1)"
+            [ -z "${version}" ] && continue
+
+            mkdir -p "${RUNNER_TEMP}/sdk${sdk}"
+            ( cd "${RUNNER_TEMP}/sdk${sdk}" \
+              && dotnet new globaljson --sdk-version "${version}" --force \
+              && dotnet workload install android )
+          done
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 platforms;android-35 platforms;android-36'
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts
+
+      - name: Enable KVM
+        # The x86_64 emulator is unusably slow without hardware acceleration, and the runner image
+        # does not grant access to /dev/kvm by default.
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run smoke tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ inputs.e2e-api-level }}
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: ./.github/scripts/run-emulator-tests.sh "${{ inputs.version }}" "${{ matrix.target-framework }}"
+
+      - name: Upload emulator logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-test-logs-${{ matrix.target-framework }}
+          path: emulator-tests.log
           if-no-files-found: ignore
           retention-days: 7

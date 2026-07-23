@@ -76,22 +76,61 @@ No single .NET SDK builds net8, net9 *and* net10 for Android, so `BuildNugets.sh
 installed SDK's band, then a `net10` pass from a scratch `global.json`) and merges the results —
 see `build/merge-packages.py`.
 
-## Sample
+## Tests
 
-`samples/Net.Agora.Sample.Android` is a plain .NET for Android app — no MAUI — that joins a
-channel and publishes/renders video directly against `Agora.Rtc.RtcEngine`: an App ID/channel/token
-entry, Join/Leave buttons, and a local + remote `SurfaceView`. It's the same flow as
-[`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s cross-platform MAUI sample, but built
-straight against this package with no façade in between — proof `Net.Agora.Video.Android` is
-consumable end to end, and a reference for wiring `RtcEngine` up by hand.
+Everything runs against the packed `.nupkg` in `artifacts/`, not the build output, because the
+failure modes worth catching here are packaging ones — most importantly the net8 "empty shell"
+trap above, which builds with 0 errors and 0 warnings.
 
-It consumes the packed `Net.Agora.Video.Android` package from `./artifacts` (see `NuGet.config`),
-so pack first:
+- **`tests/Net.Agora.Android.PackageTests`** (plain xUnit, runs anywhere) asserts the package
+  layout — a real binding assembly and the native `.aar`s for every target framework — and, through
+  the metadata reader, the API itself: the core `Agora.Rtc` types exist, the
+  `IO.Agora.Rtc2 → Agora.Rtc` rename left nothing behind, and `RtcEngine` still exposes the
+  channel lifecycle entry points. A binding that failed to generate still packs cleanly; these are
+  what notice.
+- **`tests/Net.Agora.Android.DeviceTests`** is a bare Android app (no MAUI, no test framework)
+  that consumes the packed package and drives the raw binding on an emulator: resolve the Java
+  entry points out of the packaged `.aar`, read the native SDK version, create the engine,
+  enable/disable video and audio, run the local camera preview, destroy the engine. No Agora
+  credentials are involved — the App ID is syntactically valid but unregistered, which is enough
+  for everything short of joining a channel. It reports a single `AGORA_E2E_DONE PASS`/`FAIL`
+  line to logcat, which `.github/scripts/run-emulator-tests.sh` turns into an exit code — the same
+  marker the [`Net.Agora`](https://github.com/sbokatuk/Net.Agora) façade's own device tests use.
+
+In CI (`.github/workflows/build.yml`) the `validate` job runs the package tests and the `e2e` job
+runs the emulator suite on `net8.0-android34.0` and `net10.0-android36.0` — the two extremes:
+net8's `.aar` arrives through the `DownloadFile` fallback, and net10's assets are grafted in by the
+merge step, so those are the two that could each break alone.
+
+Run the emulator suite locally, with an emulator already booted:
 
 ```sh
 ./build/BuildNugets.sh
-dotnet build samples/Net.Agora.Sample.Android -f net9.0-android35.0
+AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 net9.0-android35.0
 ```
+
+## Sample
+
+`samples/Net.Agora.Sample.Android` is a MAUI app built straight against this package — no
+cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview: an
+App ID entry, camera/microphone permission handling, and a `SurfaceView` behind a small MAUI
+handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrapped view). The
+full join/publish/subscribe flow, wrapped behind one cross-platform API, is
+[`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s sample.
+
+It consumes the packed `Net.Agora.Video.Android` package from `./artifacts` (see `NuGet.config`),
+so pack first. It targets `net10.0-android36.0` and needs the **.NET 10 SDK** with the
+`maui-android` workload, which this repository's `global.json` does not select — hence the scratch
+directory:
+
+```sh
+./build/BuildNugets.sh
+cd /tmp && dotnet new globaljson --sdk-version 10.0.100 --force
+dotnet build <repo>/samples/Net.Agora.Sample.Android/Net.Agora.Sample.Android.csproj
+```
+
+`Net.Agora.Android.sln` deliberately contains the binding project and the tests but **not** the
+sample, so `dotnet build Net.Agora.Android.sln` does not require the MAUI workload.
 
 ## Licence
 

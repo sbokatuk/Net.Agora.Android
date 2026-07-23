@@ -60,7 +60,7 @@ BenchmarkDotNet.Artifacts/
 # .NET Core
 project.lock.json
 project.fragment.lock.json
-artifacts/
+artifacts/*
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
@@ -400,5 +400,5 @@ FodyWeavers.xsd
 # Nothing native is fetched into this repository: AndroidMavenLibrary caches under
 # ~/.cache/dotnet-android/MavenCacheDirectory, and the net8.0-android34.0 fallback (see
 # src/Agora.Binding.props) downloads into $(IntermediateOutputPath), already under obj/ above.
-artifacts/
+artifacts/*
 !artifacts/.gitkeep
