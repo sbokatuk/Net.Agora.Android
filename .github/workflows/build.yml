@@ -243,6 +243,17 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Free disk space
+        # The API-35 emulator refuses to start without ~7.2 GB free for its userdata partition
+        # ("FATAL | Not enough space to create userdata partition"), and after the SDKs, workloads
+        # and Android platforms above, the runner image sits right at that line - whether a run
+        # passes depends on how much the preinstalled image happened to grow that week. Deleting
+        # toolchains this job never touches buys ~10 GB of headroom.
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+          df -h /
+
       - name: Run smoke tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
