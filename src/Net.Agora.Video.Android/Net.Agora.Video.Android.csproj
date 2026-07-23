@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Video</AgoraPackageName>
+    <!--
+      io.agora.rtc:full-sdk is a POM-only aggregator over ~20 optional plugin aars (AI noise
+      suppression, face detection, virtual background, screen sharing, ...); binding all of it
+      pulls in features this package does not expose an API for and the Java dependency verifier
+      (XA4241) refuses to build unless every one of those plugins is also present. full-rtc-basic
+      is Agora's own base artifact — RtcEngine and the core surface this package binds.
+    -->
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>full-rtc-basic</AgoraArtifact>
+    <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <!--
+    full-rtc-basic's only dependency, at the version its own POM declares (aosl is versioned
+    independently of the RTC SDK — this is not the same as $(AgoraVideoVersion)). Bind="false":
+    nothing here calls into it from C#, it only has to be present at runtime.
+  -->
+  <ItemGroup>
+    <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="1.3.5" Bind="false" />
+  </ItemGroup>
+
+  <!--
+    The Java package is io.agora.rtc2 (the "2" is Agora's own versioning wart from the 3.x -> 4.x
+    migration, kept so old and new major versions could ship side by side). Renamed to Agora.Rtc,
+    which is the namespace Agora's own C# / Unity SDK uses for the same API, so consumers coming
+    from that surface find it in the expected place.
+  -->
+  <ItemGroup>
+    <AndroidNamespaceReplacement Include="IO.Agora.Rtc2" Replacement="Agora.Rtc" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>.NET for Android / .NET MAUI bindings for the Agora Video (RTC) Android SDK, generated from io.agora.rtc:full-rtc-basic $(AgoraVideoVersion) on Maven Central. Lets a .NET app join Agora RTC channels and publish/subscribe audio and video.</Description>
+    <PackageTags>$(PackageTags);Video;RTC;streaming</PackageTags>
+  </PropertyGroup>
+
+</Project>

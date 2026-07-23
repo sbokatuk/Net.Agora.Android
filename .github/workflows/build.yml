@@ -1,0 +1,111 @@
+name: build
+
+# Reusable pipeline: packs every package in build/packages.tsv at a given version and validates
+# the result. Callers (pr.yml, release.yml) decide the version and what to do with it.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: NuGet version to stamp on every package.
+        required: true
+        type: string
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  pack:
+    name: pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # 9.0.x packs net8+net9 (global.json pins it) and 10.0.x packs net10.
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Install Android workloads for every SDK band
+        run: |
+          for major in 9 10; do
+            dir="${RUNNER_TEMP}/sdk${major}"
+            mkdir -p "${dir}"
+            sdk=$(dotnet --list-sdks | grep "^${major}\." | tail -1 | cut -d' ' -f1)
+            ( cd "${dir}" \
+              && dotnet new globaljson --sdk-version "${sdk}" --force \
+              && dotnet workload install android )
+          done
+
+      - name: Set up Android SDK platforms
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 platforms;android-35 platforms;android-36'
+
+      - name: Cache the Maven-resolved .aar
+        uses: actions/cache@v4
+        with:
+          # AndroidMavenLibrary's cache (net9+) plus the net8.0-android34.0 DownloadFile fallback's
+          # obj/ output (see src/Agora.Binding.props) — both keyed on the pin, so a version bump
+          # invalidates the cache instead of silently reusing the wrong .aar.
+          path: |
+            ~/.cache/dotnet-android/MavenCacheDirectory
+            src/*/obj/*/maven
+          key: agora-android-maven-${{ hashFiles('Directory.Build.props') }}
+
+      - name: Pack
+        run: ./build/BuildNugets.sh "${{ inputs.version }}"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build the sample against the packed packages
+        run: |
+          # Proves the package is actually consumable: it restores from artifacts/ (see
+          # NuGet.config) and links against Agora.Rtc.RtcEngine directly, with no cross-platform
+          # façade in between.
+          dotnet build samples/Net.Agora.Sample.Android \
+            -f net9.0-android35.0 \
+            -p:AgoraVideoPackageVersion="${{ inputs.version }}"
+
+  validate:
+    name: validate packages
+    needs: pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts
+
+      - name: Run package tests
+        run: dotnet test tests/Net.Agora.Android.PackageTests --logger 'trx;LogFileName=package-tests.trx'
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-test-results
+          path: '**/*.trx'
+          if-no-files-found: ignore
+          retention-days: 7

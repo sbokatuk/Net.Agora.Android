@@ -1,0 +1,43 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      Package version is <native SDK version>.<binding revision>, e.g. 4.6.3.1 — the same scheme
+      the sibling Net.Agora.iOS repository uses for its own (CocoaPods) line.
+
+      This repository binds nothing but Video today. io.agora.rtc:full-rtc-basic is what
+      AndroidMavenLibrary resolves the .aar from — see src/Agora.Binding.props for why
+      io.agora.rtc:full-sdk (the umbrella artifact) is deliberately not used.
+
+      The fourth component belongs to this repository and increments whenever the binding or
+      packaging changes while the native artifact stays put.
+    -->
+    <AgoraVideoVersion>4.6.3</AgoraVideoVersion>
+    <AgoraVideoBindingRevision>1</AgoraVideoBindingRevision>
+    <VersionPrefix>$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</VersionPrefix>
+
+    <Authors>s.bokatuk</Authors>
+    <Company>s.bokatuk</Company>
+    <Copyright>Copyright © s.bokatuk</Copyright>
+    <PackageProjectUrl>https://github.com/sbokatuk/Net.Agora.Android</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sbokatuk/Net.Agora.Android</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!--
+      MIT covers the binding code in this repository. Agora's own SDK is distributed under Agora's
+      SDK licence terms (not an OSI-approved licence with its own SPDX identifier), so — unlike
+      DatadogNet.Android's "MIT AND Apache-2.0" — no second licence expression is added here;
+      nothing is claimed about Agora's own terms.
+    -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition=" '$(GITHUB_ACTIONS)' == 'true' ">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>
