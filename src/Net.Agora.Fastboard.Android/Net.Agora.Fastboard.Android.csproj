@@ -35,12 +35,16 @@
 
   <!--
     Fastboard's own dependencies. As with the whiteboard binding these come in as Microsoft's
-    bindings rather than as embedded .aars, so an app that already has AppCompat gets one copy;
-    and as there, the pins are the newest of each line that still carries a net8 asset.
+    bindings rather than as embedded .aars, so an app that already has AppCompat gets one copy.
+
+    Not the newest of each line, though, unlike the whiteboard binding's. AppCompat 1.7.1 depends
+    on AndroidX Fragment 1.8.8, which requires Lifecycle.LiveData.Core 2.9.2 — and .NET MAUI 9 pins
+    Lifecycle.LiveData to 2.8.7, so any MAUI app referencing this package fails to restore with
+    NU1107. The 1.7.0 line stays inside MAUI's own AndroidX graph. Revisit when MAUI moves.
   -->
   <ItemGroup>
-    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.7.1.1" />
-    <PackageReference Include="Xamarin.AndroidX.RecyclerView" Version="1.4.0.3" />
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.7.0.7" />
+    <PackageReference Include="Xamarin.AndroidX.RecyclerView" Version="1.3.2.10" />
     <PackageReference Include="Xamarin.Jetbrains.Annotations" Version="26.0.2.3" />
     <PackageReference Include="GoogleGson" Version="2.13.2" />
   </ItemGroup>
