@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Extensions.Av1Enc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.IoT.Android", "src\Net.Agora.IoT.Android\Net.Agora.IoT.Android.csproj", "{C17A69A3-2962-4DC6-8BBA-FFE2C44BAD86}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Whiteboard.Android", "src\Net.Agora.Whiteboard.Android\Net.Agora.Whiteboard.Android.csproj", "{CBBC76A2-2727-42D4-8937-12C3164A0CCC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -283,6 +285,18 @@ Global
 		{C17A69A3-2962-4DC6-8BBA-FFE2C44BAD86}.Release|x64.Build.0 = Release|Any CPU
 		{C17A69A3-2962-4DC6-8BBA-FFE2C44BAD86}.Release|x86.ActiveCfg = Release|Any CPU
 		{C17A69A3-2962-4DC6-8BBA-FFE2C44BAD86}.Release|x86.Build.0 = Release|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Debug|x64.Build.0 = Debug|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Debug|x86.Build.0 = Debug|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x64.ActiveCfg = Release|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x64.Build.0 = Release|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x86.ActiveCfg = Release|Any CPU
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -307,5 +321,6 @@ Global
 		{BF2936C3-2CCE-4B75-8832-AF9EB1CE179F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{44F35ABA-9EF0-4BB6-832D-F5357A7B27EA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C17A69A3-2962-4DC6-8BBA-FFE2C44BAD86} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{CBBC76A2-2727-42D4-8937-12C3164A0CCC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

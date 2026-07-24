@@ -10,6 +10,7 @@ public static class Packages
     public const string Signaling = "Net.Agora.Signaling.Android";
     public const string Chat = "Net.Agora.Chat.Android";
     public const string IoT = "Net.Agora.IoT.Android";
+    public const string Whiteboard = "Net.Agora.Whiteboard.Android";
 
     /// <summary>
     /// The types a consumer of the RTC bindings starts with, all under the renamed namespace.
@@ -57,6 +58,16 @@ public static class Packages
         "Agora.IoT.IAccountMgr",
     ];
 
+    /// <summary>The types a consumer of the Whiteboard binding starts with.</summary>
+    private static readonly string[] WhiteboardCoreTypes =
+    [
+        "Agora.Whiteboard.WhiteSdk",
+        "Agora.Whiteboard.WhiteSdkConfiguration",
+        "Agora.Whiteboard.WhiteboardView",
+        "Agora.Whiteboard.Room",
+        "Agora.Whiteboard.RoomParams",
+    ];
+
     /// <summary>
     /// Every package build/packages.tsv lists, with what its packed form is expected to contain:
     /// the native .aar (by name prefix and a size floor that rules out placeholders), the types a
@@ -83,6 +94,9 @@ public static class Packages
         // RTC and Signaling SDKs — but the *bound* surface is the smallest of the four, since
         // everything except io.agora.iotlink is removed (Transforms/Metadata.xml).
         (IoT, "iotsdk-", 50_000_000, 200_000, IoTCoreTypes, "IO.Agora.Iotlink", 40),
+        // The one .aar here with no native code at all: the Interactive Whiteboard is a WebView
+        // SDK, so its 1 MB .aar is Java and a JS bundle. Its floors are correspondingly low.
+        (Whiteboard, "whiteboard-android-", 500_000, 300_000, WhiteboardCoreTypes, "Com.Herewhite.Sdk", 100),
     ];
 
     /// <summary>

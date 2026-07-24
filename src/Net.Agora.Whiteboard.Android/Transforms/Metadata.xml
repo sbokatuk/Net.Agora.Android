@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+  <!--
+    com.herewhite.sdk.Converter is the SDK's legacy document-conversion entry point, superseded by
+    com.herewhite.sdk.converter.ConverterV5. After the namespace rename the class lands on
+    Agora.Whiteboard.Converter and the package on the namespace Agora.Whiteboard.Converter, which
+    C# cannot hold at once (CS0101).
+
+    The class is renamed rather than the package: it is the deprecated half of the pair, and
+    "Agora.Whiteboard.Converter.ConverterV5" is the name a reader coming from netless's own docs
+    will look for. The new name says what the old class is, which its own name did not.
+  -->
+  <attr path="/api/package[@name='com.herewhite.sdk']/class[@name='Converter']" name="managedName">LegacyDocumentConverter</attr>
+
+  <!--
+    RoomListener and PlayerListener both declare onPhaseChanged and onCatchErrorWhenAppendFrame —
+    a room and a replayed session report the same two things — and both live in com.herewhite.sdk,
+    so the generator's EventArgs types for them collide in one namespace and the partials merge
+    into a single class with two sets of fields (CS0102 on p0).
+
+    The player side is renamed, the room side keeps the SDK's own names: joining a room is the
+    common case and replay the specialised one. Same reasoning as the Chat binding's chat-room
+    renames, and the same mechanism.
+  -->
+  <attr path="/api/package[@name='com.herewhite.sdk']/interface[@name='PlayerListener']/method[@name='onPhaseChanged']" name="argsType">PlayerPhaseChangedEventArgs</attr>
+  <attr path="/api/package[@name='com.herewhite.sdk']/interface[@name='PlayerListener']/method[@name='onCatchErrorWhenAppendFrame']" name="argsType">PlayerCatchErrorWhenAppendFrameEventArgs</attr>
+</metadata>

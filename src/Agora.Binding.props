@@ -72,6 +72,8 @@
   -->
   <PropertyGroup>
     <AgoraBindArtifact Condition=" '$(AgoraBindArtifact)' == '' ">true</AgoraBindArtifact>
+    <!-- Where the product's own artifact comes from; see the ItemDefinitionGroup below. -->
+    <AgoraMavenRepository Condition=" '$(AgoraMavenRepository)' == '' ">Central</AgoraMavenRepository>
 
     <!--
       AndroidMavenLibrary arrived in the .NET Android SDK 35. The net8.0-android34.0 reference
@@ -97,7 +99,14 @@
     <AgoraSupportsMavenLibrary Condition=" '$(TargetFramework)' == 'net8.0-android34.0' ">false</AgoraSupportsMavenLibrary>
   </PropertyGroup>
 
-  <!-- Defaults for every @(AgoraMavenArtifact), wherever a project declares one. -->
+  <!--
+    Defaults for every @(AgoraMavenArtifact), wherever a project declares one.
+
+    Repository takes AndroidMavenLibrary's own values — "Central", "Google", or a repository URL.
+    The URL form is what the Whiteboard and Fastboard bindings need: netless publishes to JitPack,
+    which builds from a GitHub tag rather than hosting a release, so there is no Maven Central
+    coordinate to point at. The net8 fallback target below understands the same three forms.
+  -->
   <ItemDefinitionGroup>
     <AgoraMavenArtifact>
       <Repository>Central</Repository>
@@ -110,6 +119,7 @@
     <AgoraMavenArtifact Include="$(AgoraGroupId):$(AgoraArtifact)"
                         Version="$(AgoraNativeVersion)"
                         Bind="$(AgoraBindArtifact)"
+                        Repository="$(AgoraMavenRepository)"
                         Packaging="aar" />
   </ItemGroup>
 
@@ -152,13 +162,22 @@
       </_AgoraResolved>
       <_AgoraResolved>
         <GroupPath>$([System.String]::Copy('%(Group)').Replace('.', '/'))</GroupPath>
+        <!--
+          The same three forms AndroidMavenLibrary accepts. The URL case is matched first and by
+          prefix, so a repository this file has never heard of still resolves: the alternative is
+          a silent fall-through to Maven Central and a 404 that reads like a wrong version.
+        -->
+        <BaseUrl Condition=" $([System.String]::Copy('%(Repository)').StartsWith('http')) ">%(Repository)</BaseUrl>
         <BaseUrl Condition=" '%(Repository)' == 'Google' ">https://dl.google.com/dl/android/maven2</BaseUrl>
-        <BaseUrl Condition=" '%(Repository)' != 'Google' ">https://repo1.maven.org/maven2</BaseUrl>
+        <BaseUrl Condition=" '%(Repository)' == 'Central' ">https://repo1.maven.org/maven2</BaseUrl>
       </_AgoraResolved>
       <_AgoraResolved>
         <MavenFileName>%(ArtifactId)-%(Version).%(Packaging)</MavenFileName>
       </_AgoraResolved>
     </ItemGroup>
+
+    <Error Condition=" '%(_AgoraResolved.BaseUrl)' == '' "
+           Text="@(_AgoraResolved) declares Repository='%(_AgoraResolved.Repository)', which is neither 'Central', 'Google', nor a URL." />
 
     <MakeDir Directories="$(_AgoraArtifactDirectory)" />
 
