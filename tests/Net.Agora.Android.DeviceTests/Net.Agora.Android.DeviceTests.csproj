@@ -2,11 +2,21 @@
 
   <PropertyGroup>
     <!--
-      Which of the package's target frameworks to exercise. Overriding TargetFramework directly on
-      the command line breaks restore, so it goes through a property of our own.
+      Which package to exercise (Video or Voice) and which of its target frameworks. Both go
+      through properties of our own: overriding TargetFramework directly on the command line
+      breaks restore, and the two packages cannot be referenced together — they carry the same
+      Java classes, so one app holds one of them.
     -->
+    <AgoraDevicePackage Condition=" '$(AgoraDevicePackage)' == '' ">Video</AgoraDevicePackage>
     <AgoraDeviceTargetFramework Condition=" '$(AgoraDeviceTargetFramework)' == '' ">net9.0-android35.0</AgoraDeviceTargetFramework>
     <TargetFramework>$(AgoraDeviceTargetFramework)</TargetFramework>
+    <!--
+      The voice artifact is the same engine with the video pipeline stripped at the native layer;
+      the Java API surface still declares the video entry points. The smoke tests compile the
+      video checks out rather than tolerating their runtime error codes, so a video call failing
+      on the Video package stays a hard failure.
+    -->
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Voice' ">$(DefineConstants);AGORA_VOICE</DefineConstants>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -63,7 +73,8 @@
     would prove nothing about. See NuGet.config for the local feed.
   -->
   <PropertyGroup>
-    <AgoraVideoPackageVersion Condition=" '$(AgoraVideoPackageVersion)' == '' ">$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</AgoraVideoPackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Voice' ">$(AgoraVoiceVersion).$(AgoraVoiceBindingRevision)</AgoraDevicePackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' ">$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</AgoraDevicePackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -71,7 +82,7 @@
       Exact version, in brackets — a bare version is a *minimum* to NuGet, so a build missing from
       artifacts/ would silently resolve from nuget.org instead of failing the restore.
     -->
-    <PackageReference Include="Net.Agora.Video.Android" Version="[$(AgoraVideoPackageVersion)]" />
+    <PackageReference Include="Net.Agora.$(AgoraDevicePackage).Android" Version="[$(AgoraDevicePackageVersion)]" />
   </ItemGroup>
 
 </Project>

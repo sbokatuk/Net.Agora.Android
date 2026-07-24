@@ -121,11 +121,12 @@ jobs:
             fi
             echo "## Packages"
             echo
-            echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\` (Maven Central)."
+            echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\` and io.agora.rtc:voice-rtc-basic \`${AGORA_VOICE_VERSION}\` (Maven Central)."
             echo
             echo "| Package | NuGet |"
             echo "| --- | --- |"
             echo "| \`Net.Agora.Video.Android\` | [${VERSION}](https://www.nuget.org/packages/Net.Agora.Video.Android/${VERSION}) |"
+            echo "| \`Net.Agora.Voice.Android\` | [${VERSION}](https://www.nuget.org/packages/Net.Agora.Voice.Android/${VERSION}) |"
           } > release-notes.md
 
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"

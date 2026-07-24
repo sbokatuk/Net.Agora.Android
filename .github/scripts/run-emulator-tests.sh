@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Builds the device test app against the packed Net.Agora.Video.Android package, installs it on a
-# running Android emulator and runs its checks. The app reports its verdict to logcat under a
+# Builds the device test app against a packed Net.Agora.<PACKAGE>.Android package, installs it on
+# a running Android emulator and runs its checks. The app reports its verdict to logcat under a
 # single tag; this script turns that into an exit code.
 #
 # Assumes an emulator is already booted and visible to adb - in CI that is
 # reactivecircus/android-emulator-runner, locally it is whatever you started yourself.
 #
-# Usage: run-emulator-tests.sh VERSION [TARGET_FRAMEWORK]
+# Usage: run-emulator-tests.sh VERSION [TARGET_FRAMEWORK] [PACKAGE]
+#
+# PACKAGE is the packages.tsv id — Video (default) or Voice. One run exercises one package: the
+# two carry the same Java classes, so a single app cannot hold both.
 
 VERSION="${1:?a package version is required}"
 TARGET_FRAMEWORK="${2:-net10.0-android36.0}"
+PACKAGE="${3:-Video}"
 
 PACKAGE_NAME="com.sbokatuk.agora.android.devicetests"
 LOG_FILE="emulator-tests.log"
@@ -66,14 +70,15 @@ done < "${REPO_ROOT}/build/packages.tsv"
 rm -rf "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/obj" \
        "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/bin"
 
-echo "==> building device tests (version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version})"
+echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version})"
 # Debug, not Release. Release AOT-compiles every assembly, and an AOT image built against an
 # unlinked assembly set disagrees with what the runtime loads - the app aborts on startup before a
 # single check runs. Debug also skips the R8 shrinking this app has to avoid anyway - see the
 # comments in the .csproj.
 ( cd "${SDK_DIR}" && dotnet build "${PROJECT}" \
     --configuration Debug \
-    -p:AgoraVideoPackageVersion="${VERSION}" \
+    -p:AgoraDevicePackage="${PACKAGE}" \
+    -p:AgoraDevicePackageVersion="${VERSION}" \
     -p:AgoraDeviceTargetFramework="${TARGET_FRAMEWORK}" \
     -p:RuntimeIdentifier="${DEVICE_RID}" \
     -t:Install )

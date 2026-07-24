@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+  <!--
+    The same removals as the Video binding's Transforms/Metadata.xml, minus the
+    io.agora.rtc2.video VideoCapture* family — Agora strips the camera/screen capturer
+    implementation out of voice-rtc-basic's jar, so there is nothing to remove. The rest of the
+    shared Java API layer (io.agora.base and the EGL/texture plumbing under it) ships in the voice
+    jar unchanged, and binds — or fails to bind — the same way.
+  -->
+
+  <!--
+    io.agora.base: VideoFrame's nested TextureBuffer interface declares getType() returning its own
+    nested Type enum, which the generator maps to a member named GetType() — colliding with
+    object.GetType(). Removing the raw pixel-buffer surface rather than renaming, since it is only
+    reachable through the advanced IVideoFrameObserver raw-frame path this package does not expose.
+  -->
+  <remove-node path="/api/package[@name='io.agora.base']/class[@name='VideoFrame']" />
+  <remove-node path="/api/package[@name='io.agora.base']/class[@name='TextureBuffer']" />
+
+  <!-- io.agora.base.internal.video: EGL / hardware-encoder / color-space plumbing behind VideoFrame. -->
+  <remove-node path="/api/package[@name='io.agora.base.internal.video']/class[@name='EglBase14']" />
+  <remove-node path="/api/package[@name='io.agora.base.internal.video']/class[@name='WrappedNativeColorSpace']" />
+  <remove-node path="/api/package[@name='io.agora.base.internal.video']/class[@name='HardwareVideoEncoder']" />
+
+  <!--
+    io.agora.spatialaudio.internal: LocalSpatialAudioImpl overrides Release() with a narrower
+    access modifier than the interface declares. The interfaces it implements (ILocalSpatialAudioEngine,
+    IBaseSpatialAudioEngine) stay bound; only this concrete impl class — never constructed directly
+    by a consumer, only handed back through RtcEngine's own factory method — is removed.
+  -->
+  <remove-node path="/api/package[@name='io.agora.spatialaudio.internal']/class[@name='LocalSpatialAudioImpl']" />
+</metadata>

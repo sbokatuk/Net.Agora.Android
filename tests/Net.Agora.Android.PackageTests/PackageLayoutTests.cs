@@ -10,40 +10,42 @@ namespace Net.Agora.Android.PackageTests;
 public class PackageLayoutTests
 {
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void Video_carries_a_binding_assembly_for_every_target_framework(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworks), MemberType = typeof(Packages))]
+    public void Package_carries_a_binding_assembly_for_every_target_framework(string packageId, string tfm)
     {
-        using var package = Packages.OpenPackage(Packages.Video);
+        using var package = Packages.OpenPackage(packageId);
 
-        var entry = package.GetEntry($"lib/{tfm}/{Packages.Video}.dll");
-        Assert.True(entry is not null, $"{Packages.Video} is missing the assembly for {tfm}.");
+        var entry = package.GetEntry($"lib/{tfm}/{packageId}.dll");
+        Assert.True(entry is not null, $"{packageId} is missing the assembly for {tfm}.");
 
         // The empty-shell failure mode is a real .dll, just a tiny one with no bound types — a
-        // present-but-missing check would not catch it. A binding of io.agora.rtc:full-rtc-basic
+        // present-but-missing check would not catch it. A binding of either rtc-basic artifact
         // compiles to several hundred KB at minimum.
         Assert.True(
             entry!.Length > 500_000,
-            $"{Packages.Video}'s assembly for {tfm} is only {entry.Length} bytes — looks like an " +
+            $"{packageId}'s assembly for {tfm} is only {entry.Length} bytes — looks like an " +
             "empty binding shell rather than a real one.");
     }
 
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void Video_carries_the_native_aars_for_every_target_framework(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworkAars), MemberType = typeof(Packages))]
+    public void Package_carries_the_native_aars_for_every_target_framework(
+        string packageId, string tfm, string aarPrefix)
     {
-        using var package = Packages.OpenPackage(Packages.Video);
+        using var package = Packages.OpenPackage(packageId);
 
         var entries = package.Entries
             .Where(e => e.FullName.StartsWith($"lib/{tfm}/", StringComparison.Ordinal)
                         && e.FullName.EndsWith(".aar", StringComparison.Ordinal))
             .ToList();
 
-        Assert.True(entries.Count > 0, $"{Packages.Video} carries no .aar for {tfm}.");
+        Assert.True(entries.Count > 0, $"{packageId} carries no .aar for {tfm}.");
 
-        var full = entries.SingleOrDefault(e => e.Name.StartsWith("full-rtc-basic-", StringComparison.Ordinal));
-        Assert.True(full is not null, $"{Packages.Video} is missing full-rtc-basic-*.aar for {tfm}.");
+        var native = entries.SingleOrDefault(e => e.Name.StartsWith(aarPrefix, StringComparison.Ordinal));
+        Assert.True(native is not null, $"{packageId} is missing {aarPrefix}*.aar for {tfm}.");
 
-        // Tens of MB with jniLibs for four ABIs. Anything small means a placeholder.
-        Assert.True(full!.Length > 20_000_000, $"'{full.FullName}' is only {full.Length} bytes; looks empty.");
+        // Tens of MB with jniLibs for four ABIs — voice-rtc-basic is the smaller of the two at
+        // ~28 MB. Anything below the floor means a placeholder.
+        Assert.True(native!.Length > 20_000_000, $"'{native.FullName}' is only {native.Length} bytes; looks empty.");
     }
 }

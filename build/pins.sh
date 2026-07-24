@@ -15,3 +15,9 @@ AGORA_VIDEO_VERSION="$(grep -oE '<AgoraVideoVersion>[^<]+' "${AGORA_REPO_ROOT}/D
 export AGORA_VIDEO_BINDING_REVISION
 AGORA_VIDEO_BINDING_REVISION="$(grep -oE '<AgoraVideoBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraVideoBindingRevision>//')"
 export AGORA_VIDEO_PACKAGE_VERSION="${AGORA_VIDEO_VERSION}.${AGORA_VIDEO_BINDING_REVISION}"
+
+export AGORA_VOICE_VERSION
+AGORA_VOICE_VERSION="$(grep -oE '<AgoraVoiceVersion>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraVoiceVersion>//')"
+export AGORA_VOICE_BINDING_REVISION
+AGORA_VOICE_BINDING_REVISION="$(grep -oE '<AgoraVoiceBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraVoiceBindingRevision>//')"
+export AGORA_VOICE_PACKAGE_VERSION="${AGORA_VOICE_VERSION}.${AGORA_VOICE_BINDING_REVISION}"

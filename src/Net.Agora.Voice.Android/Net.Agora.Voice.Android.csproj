@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Voice</AgoraPackageName>
+    <!--
+      voice-rtc-basic is the same RTC engine as Video's full-rtc-basic, built without the video
+      pipeline: the native library drops the video codecs (~28 MB .aar against full's ~48 MB),
+      while the Java API layer stays the shared io.agora.rtc2 surface. io.agora.rtc:voice-sdk (the
+      POM-only aggregator) is avoided for the same reasons full-sdk is in the Video project — see
+      that .csproj.
+
+      This package and Net.Agora.Video.Android are mutually exclusive within one app: both .aars
+      carry the same Java classes, so referencing both fails the build at dex merge. That mirrors
+      Agora's own artifacts, where an app picks voice-sdk or full-sdk, never both.
+    -->
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>voice-rtc-basic</AgoraArtifact>
+    <AgoraNativeVersion>$(AgoraVoiceVersion)</AgoraNativeVersion>
+    <VersionPrefix>$(AgoraVoiceVersion).$(AgoraVoiceBindingRevision)</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <!--
+    voice-rtc-basic's only dependency, at the version its own POM declares (aosl is versioned
+    independently of the RTC SDK — this is not the same as $(AgoraVoiceVersion)). Bind="false":
+    nothing here calls into it from C#, it only has to be present at runtime.
+  -->
+  <ItemGroup>
+    <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="1.3.5" Bind="false" />
+  </ItemGroup>
+
+  <!--
+    Same rename as the Video binding, for the same reason — and deliberately the same resulting
+    namespace: Agora's voice artifact is the video engine minus the video pipeline, not a separate
+    API, so consumers switching an app between the two packages recompile without touching code.
+  -->
+  <ItemGroup>
+    <AndroidNamespaceReplacement Include="IO.Agora.Rtc2" Replacement="Agora.Rtc" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>.NET for Android / .NET MAUI bindings for the Agora Voice Android SDK, generated from io.agora.rtc:voice-rtc-basic $(AgoraVoiceVersion) on Maven Central. Lets a .NET app join Agora RTC channels and publish/subscribe audio, without carrying the video codecs. Use Net.Agora.Video.Android instead if the app ever shows or sends video.</Description>
+    <PackageTags>$(PackageTags);Voice;RTC;audio;streaming</PackageTags>
+  </PropertyGroup>
+
+</Project>
