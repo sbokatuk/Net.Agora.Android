@@ -65,7 +65,10 @@ public class BindingApiTests
         // using the documented namespace would break. Other IO.Agora.* prefixes (io.agora.base
         // and friends) are expected: the rename deliberately covers only the package each
         // repository documents.
-        var legacy = Packages.Row(packageId).LegacyPrefix;
+        // The trailing dot matters: without it this matches on a type *name* that merely starts
+        // with the last segment — Chat's IO.Agora.ChatRoomChangeListener, which lives in the bare
+        // io.agora package and is not covered by the io.agora.chat rename at all.
+        var legacy = Packages.Row(packageId).LegacyPrefix + ".";
         var leftovers = api.PublicTypes
             .Where(t => t.StartsWith(legacy, StringComparison.Ordinal))
             .ToList();

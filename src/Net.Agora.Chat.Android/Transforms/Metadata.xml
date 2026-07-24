@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+  <!--
+    ==========================================================================================
+    Listener callbacks
+    ==========================================================================================
+    The Chat SDK's listener interfaces all live in the bare io.agora package, and the SDK has
+    grown by adding overloads rather than new names. That breaks the binding generator's event
+    sugar in two independent ways:
+
+      * Two interfaces — GroupChangeListener and ChatRoomChangeListener — declare twelve
+        identically-named callbacks, because a chat room and a group support the same moderation
+        operations. Each becomes an <Name>EventArgs class in IO.Agora, so the twelve collide
+        pairwise and the generated partial classes merge into one type carrying both sets of
+        fields (CS0102 on p0/p1/p2).
+
+      * Four callbacks are overloaded within one interface. Each overload wants the same
+        On<Name>Handler field on the Implementor (CS0102) and the same EventArgs type (CS0111).
+
+    Suppressing the events is not a way out: with eventName emptied, the generator still emits the
+    Implementor's "are all handlers null" check over every method, which then references handler
+    fields it no longer declares (CS1061). Both problems are fixed by renaming instead, so the
+    full callback surface stays bound and usable.
+  -->
+
+  <!--
+    Every overload set here is one current callback plus its deprecated predecessors, so the
+    current signature keeps the SDK's own name and the superseded ones are suffixed. Renaming
+    rather than removing matters for onRequestToJoinDeclined and onMuteListAdded in particular:
+    those deprecated overloads are declared abstract in Java, so dropping them would leave the
+    generated Java proxy failing to implement its own interface.
+
+    Selected by JNI signature — the only selector that distinguishes overloads exactly.
+  -->
+  <attr path="/api/package[@name='io.agora']/interface[@name='ConnectionListener']/method[@name='onLogout' and @jni-signature='(I)V']" name="managedName">OnLogoutLegacy</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ConnectionListener']/method[@name='onLogout' and @jni-signature='(ILjava/lang/String;)V']" name="managedName">OnLogoutLegacyWithText</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='GroupChangeListener']/method[@name='onRequestToJoinDeclined' and @jni-signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V']" name="managedName">OnRequestToJoinDeclinedLegacy</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onMemberJoined' and @jni-signature='(Ljava/lang/String;Ljava/lang/String;)V']" name="managedName">OnMemberJoinedLegacy</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onMuteListAdded' and @jni-signature='(Ljava/lang/String;Ljava/util/List;J)V']" name="managedName">OnMuteListAddedLegacy</attr>
+
+  <!--
+    The twelve names shared with GroupChangeListener. The chat-room side is the one renamed
+    (rather than the group side) because groups are the more commonly used of the two surfaces, so
+    their generated names are left as the SDK's own.
+  -->
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onAdminAdded']" name="argsType">ChatRoomAdminAddedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onAdminRemoved']" name="argsType">ChatRoomAdminRemovedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onAllMemberMuteStateChanged']" name="argsType">ChatRoomAllMemberMuteStateChangedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onAnnouncementChanged']" name="argsType">ChatRoomAnnouncementChangedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onMemberExited']" name="argsType">ChatRoomMemberExitedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onMemberJoined']" name="argsType">ChatRoomMemberJoinedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onMuteListAdded']" name="argsType">ChatRoomMuteListAddedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onMuteListRemoved']" name="argsType">ChatRoomMuteListRemovedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onOwnerChanged']" name="argsType">ChatRoomOwnerChangedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onSpecificationChanged']" name="argsType">ChatRoomSpecificationChangedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onWhiteListAdded']" name="argsType">ChatRoomWhiteListAddedEventArgs</attr>
+  <attr path="/api/package[@name='io.agora']/interface[@name='ChatRoomChangeListener']/method[@name='onWhiteListRemoved']" name="argsType">ChatRoomWhiteListRemovedEventArgs</attr>
+
+  <!--
+    ==========================================================================================
+    Internal classes class-parse cannot bind
+    ==========================================================================================
+    io.agora.util.FileUtils bundles a nested MyComparator whose compare() is declared over its own
+    concrete type rather than Object, so the generated class does not satisfy IComparator
+    (CS0535). It is an internal file-sorting helper with no place in the public surface, so the
+    whole class is removed rather than patched — nested type included, since class-parse lists a
+    nested class as its own node and removing the outer one alone leaves it orphaned (BG8604).
+  -->
+  <remove-node path="/api/package[@name='io.agora.util']/class[@name='FileUtils.MyComparator']" />
+  <remove-node path="/api/package[@name='io.agora.util']/class[@name='FileUtils']" />
+
+  <!--
+    io.agora.chat.core.EMChatConfigPrivate ships obfuscated: its members are single letters, and
+    ProGuard has collapsed several distinct Java methods onto the same name with signatures that
+    differ only in ways C# cannot express as overloads (CS0111 on B, C, D, ... right through the
+    alphabet). Its name says what it is — nothing outside the SDK is meant to call it.
+  -->
+  <remove-node path="/api/package[@name='io.agora.chat.core']/class[@name='EMChatConfigPrivate.EMEnvMode']" />
+  <remove-node path="/api/package[@name='io.agora.chat.core']/class[@name='EMChatConfigPrivate.EMSDKMode']" />
+  <remove-node path="/api/package[@name='io.agora.chat.core']/class[@name='EMChatConfigPrivate']" />
+
+  <!--
+    The vendor push integrations. Each of io.agora.push.platform.{fcm,hms,honor,meizu,mi,oppo,
+    vivo} adapts Agora's push abstraction onto one device manufacturer's own push SDK, and
+    therefore extends or implements types from that SDK — com.xiaomi.mipush.sdk.PushMessageReceiver,
+    com.vivo.push.sdk.OpenClientPushMessageReceiver, com.heytap.msp.push.callback.
+    ICallBackResultService and so on. None of those jars is a dependency of chat-sdk.
+
+    class-parse drops the subclasses of those missing types by itself, before any of this file is
+    applied — that is what the BG8605/BG8606 warnings on every build of this project are, and
+    java-resolution-report.log lists exactly which classes went. What it leaves behind is the rest
+    of each adapter: helper classes that merely *reference* the vendor SDK, which bind with an
+    unknown base type (BG8102) or as obfuscated single-letter shells. Those are removed here.
+
+    Nothing is lost. The classes stay in the .aar and Agora's own PushHelper still finds them by
+    reflection at runtime, so an app that adds a vendor push SDK gets vendor push exactly as it
+    would from Java. What is removed is only a C# view that could never have been constructed
+    without bindings for the vendor SDKs themselves.
+
+    io.agora.push (PushConfig, PushHelper, PushListener, PushType) — the part an app actually
+    calls — stays bound, as does the .normal fallback transport.
+  -->
+  <remove-node path="/api/package[@name='io.agora.push.platform.fcm']/class[@name='a']" />
+  <remove-node path="/api/package[@name='io.agora.push.platform.hms']/class[@name='a']" />
+  <remove-node path="/api/package[@name='io.agora.push.platform.honor']/class[@name='a']" />
+  <remove-node path="/api/package[@name='io.agora.push.platform.meizu']/class[@name='a']" />
+  <remove-node path="/api/package[@name='io.agora.push.platform.mi']/class[@name='a']" />
+  <remove-node path="/api/package[@name='io.agora.push.platform.oppo']/class[@name='EMOppoPush']" />
+  <remove-node path="/api/package[@name='io.agora.push.platform.vivo']/class[@name='EMVivoPush']" />
+</metadata>

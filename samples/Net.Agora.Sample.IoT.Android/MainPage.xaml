@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Net.Agora.Sample.IoT.Android.MainPage"
+             Title="Net.Agora IoT (Android)">
+
+    <Grid Padding="16" RowSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto,*">
+
+        <Label Grid.Row="0" FontAttributes="Bold"
+               Text="Agora IoT — Android only. There is no iOS SDK for this product, so there is no cross-platform client." />
+
+        <Entry x:Name="AppIdEntry" Grid.Row="1" Placeholder="App ID (from the Agora Console)" />
+        <Entry x:Name="ProjectIdEntry" Grid.Row="2" Placeholder="IoT project id" />
+
+        <HorizontalStackLayout Grid.Row="3" Spacing="8">
+            <Button x:Name="InitButton" Text="Initialise" Clicked="OnInitClicked" />
+            <Button x:Name="StateButton" Text="State" Clicked="OnStateClicked" IsEnabled="False" />
+            <Button x:Name="ReleaseButton" Text="Release" Clicked="OnReleaseClicked" IsEnabled="False" />
+        </HorizontalStackLayout>
+
+        <ScrollView Grid.Row="4">
+            <Label x:Name="StatusLabel" FontFamily="OpenSansRegular" FontSize="12" />
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

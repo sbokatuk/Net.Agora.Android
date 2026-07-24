@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Extensions.SpatialAudio</AgoraPackageName>
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>spatial-audio</AgoraArtifact>
+    <!--
+      Extensions ride the RTC version line: Agora builds them from the same source drop as
+      full-rtc-basic / voice-rtc-basic and publishes them under the same version, so there is no
+      separate pin.
+    -->
+    <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+    <!--
+      Nothing to bind: spatial-audio's classes.jar is 22 bytes — an empty archive — and the
+      whole .aar is jni/<abi>/*.so. See src/Agora.Extension.md for what that means for this
+      package's shape.
+    -->
+    <AgoraBindArtifact>false</AgoraBindArtifact>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <PropertyGroup>
+    <Title>The Agora 3D spatial audio extension for .NET for Android.</Title>
+    <Description>The native payload for Agora's 3D spatial audio extension (spatial-audio $(AgoraVideoVersion) on Maven Central), packaged for .NET for Android. Places each remote speaker somewhere around the listener's head, so a call or a game world has direction and distance rather than one flat mix. Add it alongside Net.Agora.Video.Android or Net.Agora.Voice.Android — it carries no managed API of its own; the switch that turns it on is RtcEngine.GetLocalSpatialAudioEngine in the RTC binding.</Description>
+    <PackageTags>$(PackageTags);RTC;extension;3D;spatial;audio</PackageTags>
+  </PropertyGroup>
+
+</Project>

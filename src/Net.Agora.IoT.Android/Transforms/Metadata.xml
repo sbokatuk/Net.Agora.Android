@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+  <!--
+    This package binds the IoT SDK's own API — io.agora.iotlink — and nothing else.
+
+    io.agora:iotsdk is an 80 MB .aar that carries a whole private copy of the RTC and Signaling
+    SDKs inside it: agora-rtc-sdk.jar and agora-rtm-sdk.jar in libs/, and the matching .so files
+    in jni/. That copy is an *older* drop than the one Net.Agora.Video.Android binds, and
+    class-parse cannot generate it cleanly — 253 errors on the first attempt, from the same
+    VideoFrame/EglBase/LocalSpatialAudioImpl shapes the Video binding removes one by one, plus
+    duplicate members in the io.agora.rtc2.internal message classes that the newer drop does not
+    have.
+
+    Rather than reproduce and then maintain a second, worse copy of Net.Agora.Video.Android's
+    Metadata.xml, every non-iotlink package is removed from the managed surface. Nothing is lost:
+    the classes stay in the .aar and the IoT SDK calls them itself at runtime, which is the only
+    thing it wants them for. A consumer who needs RtcEngine directly wants Net.Agora.Video.Android
+    — and cannot have both in one app anyway, since the duplicate io.agora.rtc2.* classes fail the
+    dex merge. That constraint is the reason this package exists as its own thing.
+  -->
+  <remove-node path="/api/package[@name='io.agora.base']" />
+  <remove-node path="/api/package[@name='io.agora.base.internal']" />
+  <remove-node path="/api/package[@name='io.agora.base.internal.video']" />
+  <remove-node path="/api/package[@name='io.agora.base.internal.voiceengine']" />
+  <remove-node path="/api/package[@name='io.agora.common']" />
+  <remove-node path="/api/package[@name='io.agora.common.annotation']" />
+  <remove-node path="/api/package[@name='io.agora.mediaplayer']" />
+  <remove-node path="/api/package[@name='io.agora.mediaplayer.data']" />
+  <remove-node path="/api/package[@name='io.agora.mediaplayer.gl']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.audio']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.gl']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.internal']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.internal.gdp']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.live']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.proxy']" />
+  <remove-node path="/api/package[@name='io.agora.rtc2.video']" />
+  <remove-node path="/api/package[@name='io.agora.rtm']" />
+  <remove-node path="/api/package[@name='io.agora.rtm.internal']" />
+  <remove-node path="/api/package[@name='io.agora.rtm.jni']" />
+  <remove-node path="/api/package[@name='io.agora.spatialaudio']" />
+  <remove-node path="/api/package[@name='io.agora.spatialaudio.internal']" />
+  <remove-node path="/api/package[@name='io.agora.utils']" />
+
+  <!--
+    io.agora.iotlink.rtcsdk and .sdkimpl are the SDK's own implementation of the interfaces in
+    io.agora.iotlink: they subclass the bundled RTC types removed above, so what survives of them
+    is a half-bound shell no consumer would construct. The interfaces they implement stay, and
+    AIotAppSdkFactory is how the SDK hands out instances of them.
+  -->
+  <remove-node path="/api/package[@name='io.agora.iotlink.rtcsdk']" />
+  <remove-node path="/api/package[@name='io.agora.iotlink.sdkimpl']" />
+
+  <!--
+    io.agora.iotlink.aws is the SDK's AWS IoT Core transport: its classes extend
+    com.amazonaws.auth.AWSAbstractCognitoDeveloperIdentityProvider and implement
+    AWSIotMqttClientStatusCallback. The AWS Android SDK is not a dependency of io.agora:iotsdk —
+    its .pom declares none at all — so class-parse cannot resolve those types (BG8605) and drops
+    the subclasses by itself; what is removed here is the remainder that would otherwise bind
+    against a base type this package does not have.
+
+    This matters to a consumer beyond tidiness: the device-messaging and alarm features route
+    through AWS IoT Core, so an app that uses them has to add the AWS Android SDK — for which
+    there is no official .NET binding. See the package description.
+  -->
+  <remove-node path="/api/package[@name='io.agora.iotlink.aws']" />
+</metadata>

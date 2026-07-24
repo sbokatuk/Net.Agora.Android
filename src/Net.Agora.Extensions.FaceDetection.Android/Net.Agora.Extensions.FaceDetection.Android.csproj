@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Extensions.FaceDetection</AgoraPackageName>
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>full-face-detect</AgoraArtifact>
+    <!--
+      Extensions ride the RTC version line: Agora builds them from the same source drop as
+      full-rtc-basic / voice-rtc-basic and publishes them under the same version, so there is no
+      separate pin.
+    -->
+    <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+    <!--
+      Nothing to bind: full-face-detect's classes.jar is 22 bytes — an empty archive — and the
+      whole .aar is jni/<abi>/*.so. See src/Agora.Extension.md for what that means for this
+      package's shape.
+    -->
+    <AgoraBindArtifact>false</AgoraBindArtifact>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <PropertyGroup>
+    <Title>The Agora local face detection extension for .NET for Android.</Title>
+    <Description>The native payload for Agora's local face detection extension (full-face-detect $(AgoraVideoVersion) on Maven Central), packaged for .NET for Android. Reports whether a face is in frame and how far away it is — used to auto-adjust exposure and capture, or to pause the stream when nobody is there. Add it alongside Net.Agora.Video.Android or Net.Agora.Voice.Android — it carries no managed API of its own; the switch that turns it on is RtcEngine.EnableFaceDetection in the RTC binding.</Description>
+    <PackageTags>$(PackageTags);RTC;extension;local;face;detection</PackageTags>
+  </PropertyGroup>
+
+</Project>

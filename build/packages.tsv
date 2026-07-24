@@ -13,3 +13,21 @@
 Video	-
 Voice	-
 Signaling	-
+Chat	-
+# Android-only, and mutually exclusive with everything above it — see the project's .csproj.
+IoT	-
+# The optional RTC feature extensions: native payload only, no managed API, no dependency on
+# either RTC package. See src/Agora.Extension.md for why they are shaped that way, and for what
+# is deliberately absent (screen sharing, the -ll variants, LipSync).
+Extensions.Ains	-
+Extensions.Aiaec	-
+Extensions.AudioBeauty	-
+Extensions.SpatialAudio	-
+Extensions.VirtualBackground	-
+Extensions.ContentInspect	-
+Extensions.ClearVision	-
+Extensions.FaceCapture	-
+Extensions.FaceDetection	-
+Extensions.VideoQualityAnalyzer	-
+Extensions.VideoEncoder	-
+Extensions.Av1Encoder	-

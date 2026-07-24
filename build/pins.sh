@@ -27,3 +27,15 @@ AGORA_SIGNALING_VERSION="$(grep -oE '<AgoraSignalingVersion>[^<]+' "${AGORA_REPO
 export AGORA_SIGNALING_BINDING_REVISION
 AGORA_SIGNALING_BINDING_REVISION="$(grep -oE '<AgoraSignalingBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraSignalingBindingRevision>//')"
 export AGORA_SIGNALING_PACKAGE_VERSION="${AGORA_SIGNALING_VERSION}.${AGORA_SIGNALING_BINDING_REVISION}"
+
+export AGORA_CHAT_VERSION
+AGORA_CHAT_VERSION="$(grep -oE '<AgoraChatVersion>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraChatVersion>//')"
+export AGORA_CHAT_BINDING_REVISION
+AGORA_CHAT_BINDING_REVISION="$(grep -oE '<AgoraChatBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraChatBindingRevision>//')"
+export AGORA_CHAT_PACKAGE_VERSION="${AGORA_CHAT_VERSION}.${AGORA_CHAT_BINDING_REVISION}"
+
+export AGORA_IOT_VERSION
+AGORA_IOT_VERSION="$(grep -oE '<AgoraIoTVersion>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraIoTVersion>//')"
+export AGORA_IOT_BINDING_REVISION
+AGORA_IOT_BINDING_REVISION="$(grep -oE '<AgoraIoTBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraIoTBindingRevision>//')"
+export AGORA_IOT_PACKAGE_VERSION="${AGORA_IOT_VERSION}.${AGORA_IOT_BINDING_REVISION}"

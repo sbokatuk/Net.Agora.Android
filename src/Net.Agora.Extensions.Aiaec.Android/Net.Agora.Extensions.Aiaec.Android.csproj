@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Extensions.Aiaec</AgoraPackageName>
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>aiaec</AgoraArtifact>
+    <!--
+      Extensions ride the RTC version line: Agora builds them from the same source drop as
+      full-rtc-basic / voice-rtc-basic and publishes them under the same version, so there is no
+      separate pin.
+    -->
+    <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+    <!--
+      Nothing to bind: aiaec's classes.jar is 22 bytes — an empty archive — and the
+      whole .aar is jni/<abi>/*.so. See src/Agora.Extension.md for what that means for this
+      package's shape.
+    -->
+    <AgoraBindArtifact>false</AgoraBindArtifact>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <PropertyGroup>
+    <Title>The Agora AI acoustic echo cancellation extension for .NET for Android.</Title>
+    <Description>The native payload for Agora's AI acoustic echo cancellation extension (aiaec $(AgoraVideoVersion) on Maven Central), packaged for .NET for Android. Cancels the far end leaking back through the local speaker in cases the conventional AEC cannot handle — cheap speakers, high volume, a device held close to another. Add it alongside Net.Agora.Video.Android or Net.Agora.Voice.Android — it carries no managed API of its own; the switch that turns it on is RtcEngine.SetParameters("{\"che.audio.aiaec.working_mode\": 1}") in the RTC binding.</Description>
+    <PackageTags>$(PackageTags);RTC;extension;AI;acoustic;echo;cancellation</PackageTags>
+  </PropertyGroup>
+
+</Project>
