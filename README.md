@@ -7,19 +7,28 @@
 
 .NET for Android and .NET MAUI bindings for Agora's native Android SDKs.
 
-Only **Video** (RTC) is bound today. Join a channel and publish/subscribe audio and video from C#,
-in a `net8.0-android`, `net9.0-android` or `net10.0-android` app.
+Two products are bound, from `net8.0-android` through `net10.0-android`:
+
+| Package | Native artifact | Use it when |
+| --- | --- | --- |
+| `Net.Agora.Video.Android` | [`io.agora.rtc:full-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic) | The app shows or sends video (also carries the full audio surface). |
+| `Net.Agora.Voice.Android` | [`io.agora.rtc:voice-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/voice-rtc-basic) | Audio only — the same engine built without the video pipeline, a ~20 MB smaller `.aar`. |
 
 ```bash
-dotnet add package Net.Agora.Video.Android
+dotnet add package Net.Agora.Video.Android   # or Net.Agora.Voice.Android
 ```
 
-This is a raw platform binding — the full `class-parse`-generated surface, `Agora.Rtc.RtcEngine`
-and friends, under the `Agora.Rtc` namespace (renamed from the Java package `io.agora.rtc2` to
-match Agora's own C# / Unity SDK naming). Most apps want the cross-platform client instead:
-[`Net.Agora.Video`](https://github.com/sbokatuk/Net.Agora), which wraps this package and its iOS
-sibling behind one API. Reach for this package directly only when you need something the
-cross-platform client does not expose.
+Pick **one**: both `.aar`s carry the same Java classes (`io.agora.rtc2.*`), so referencing both
+fails the build at dex merge — mirroring Agora's own artifacts, where an app depends on the full
+or the voice SDK, never both. For the same reason both bindings expose the same `Agora.Rtc`
+namespace (renamed from `io.agora.rtc2` to match Agora's own C# / Unity SDK naming), so an app can
+switch packages without touching code.
+
+These are raw platform bindings — the full `class-parse`-generated surface, `Agora.Rtc.RtcEngine`
+and friends. Most apps want the cross-platform clients instead:
+[`Net.Agora.Video` / `Net.Agora.Voice`](https://github.com/sbokatuk/Net.Agora), which wrap these
+packages and their iOS siblings behind one API. Reach for a binding directly only when you need
+something the cross-platform client does not expose.
 
 ```csharp
 using Agora.Rtc;
@@ -35,26 +44,29 @@ engine.JoinChannel(token: null, channelId: "my-channel", optionalInfo: null, uid
 
 ## How this repository works
 
-This repository binds nothing but the Video (RTC) SDK today, and it is the *only* thing that binds
-it: [`Net.Agora`](https://github.com/sbokatuk/Net.Agora) (the cross-platform façade) and
+This repository is the *only* thing that binds Agora's Android SDKs:
+[`Net.Agora`](https://github.com/sbokatuk/Net.Agora) (the cross-platform façade) and
 [`Net.Agora.iOS`](https://github.com/sbokatuk/Net.Agora.iOS) (the iOS binding) are separate
-repositories, each with their own release cadence. `Net.Agora.Video.Android`'s version is
-`<io.agora.rtc:full-rtc-basic version>.<binding revision>` — see `Directory.Build.props` for why
-the Android and iOS lines don't share a version number.
+repositories, each with their own release cadence. Each package's version is
+`<native artifact version>.<binding revision>` — see `Directory.Build.props` for why the Android
+and iOS lines don't share a version number. The package set lives in `build/packages.tsv`; adding
+a package means adding a row there and a project under `src/`.
 
-### What is bound, and why not `full-sdk`
+### What is bound, and why not `full-sdk` / `voice-sdk`
 
-`io.agora.rtc:full-sdk` is a POM-only aggregator over roughly twenty optional plugin `.aar`s — AI
-noise suppression, face detection, virtual background, screen sharing, and so on. Binding all of
-it pulls in features this package exposes no API for, and Android's Java dependency verification
-(`XA4241`) refuses to build unless every one of those plugins is present too.
-`io.agora.rtc:full-rtc-basic` is Agora's own base artifact: `RtcEngine` and the core surface this
-package binds, with exactly one dependency (`io.agora.infra:aosl`).
+`io.agora.rtc:full-sdk` (and its voice counterpart `voice-sdk`) is a POM-only aggregator over
+optional plugin `.aar`s — AI noise suppression, face detection, virtual background, screen
+sharing, and so on. Binding all of it pulls in features these packages expose no API for, and
+Android's Java dependency verification (`XA4241`) refuses to build unless every one of those
+plugins is present too. `io.agora.rtc:full-rtc-basic` / `voice-rtc-basic` are Agora's own base
+artifacts: `RtcEngine` and the core surface these packages bind, with exactly one dependency
+(`io.agora.infra:aosl`).
 
-`Transforms/Metadata.xml` removes a handful of internal implementation classes that `class-parse`
-cannot bind cleanly on its own — the default camera/screen capturer, the raw
-video-frame/EGL/texture pipeline, the spatial-audio impl class — none of which a consumer of
-`RtcEngine` calls directly.
+Each project's `Transforms/Metadata.xml` removes the few internal implementation classes that
+`class-parse` cannot bind cleanly on its own — for Video the default camera/screen capturer, for
+both the raw video-frame/EGL/texture pipeline and the spatial-audio impl class — none of which a
+consumer of `RtcEngine` calls directly. (The voice `.aar` ships the same shared Java API layer,
+video types included; only the native pipeline differs.)
 
 ## Building locally
 
@@ -98,15 +110,18 @@ trap above, which builds with 0 errors and 0 warnings.
   marker the [`Net.Agora`](https://github.com/sbokatuk/Net.Agora) façade's own device tests use.
 
 In CI (`.github/workflows/build.yml`) the `validate` job runs the package tests and the `e2e` job
-runs the emulator suite on `net8.0-android34.0` and `net10.0-android36.0` — the two extremes:
-net8's `.aar` arrives through the `DownloadFile` fallback, and net10's assets are grafted in by the
-merge step, so those are the two that could each break alone.
+runs the emulator suite per package (Video and Voice — one leg each, since a single app can hold
+only one of them) on `net8.0-android34.0` and `net10.0-android36.0` — the two extremes: net8's
+`.aar` arrives through the `DownloadFile` fallback, and net10's assets are grafted in by the merge
+step, so those are the two that could each break alone. The Voice legs compile the video checks
+out (see the `AGORA_VOICE` constant in the device tests).
 
 Run the emulator suite locally, with an emulator already booted:
 
 ```sh
 ./build/BuildNugets.sh
 AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 net9.0-android35.0
+AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 net9.0-android35.0 Voice
 ```
 
 ## Sample

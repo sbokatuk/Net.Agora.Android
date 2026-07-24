@@ -16,7 +16,9 @@ public class BindingApiTests
     /// <summary>
     /// The types a consumer starts with, all under the renamed namespace. Video lives in
     /// Agora.Rtc.Video (from the Java package io.agora.rtc2.video); the rename maps the whole
-    /// IO.Agora.Rtc2 prefix, sub-namespaces included.
+    /// IO.Agora.Rtc2 prefix, sub-namespaces included. One list for both packages: Agora ships the
+    /// same Java API layer in voice-rtc-basic — including the video types — and strips only the
+    /// native video pipeline, so the voice binding exposes these too.
     /// </summary>
     private static readonly string[] CoreTypes =
     [
@@ -28,48 +30,49 @@ public class BindingApiTests
         "Agora.Rtc.Video.VideoEncoderConfiguration",
     ];
 
-    private static AssemblyApi OpenBinding(string tfm)
+    private static AssemblyApi OpenBinding(string packageId, string tfm)
     {
-        using var package = Packages.OpenPackage(Packages.Video);
-        var assembly = Packages.ReadEntry(package, $"lib/{tfm}/{Packages.Video}.dll");
+        using var package = Packages.OpenPackage(packageId);
+        var assembly = Packages.ReadEntry(package, $"lib/{tfm}/{packageId}.dll");
         return new AssemblyApi(assembly);
     }
 
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void Binding_exposes_the_core_rtc_types(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworks), MemberType = typeof(Packages))]
+    public void Binding_exposes_the_core_rtc_types(string packageId, string tfm)
     {
-        using var api = OpenBinding(tfm);
+        using var api = OpenBinding(packageId, tfm);
 
         var missing = CoreTypes.Except(api.PublicTypes).ToList();
 
         Assert.True(
             missing.Count == 0,
-            $"{Packages.Video} ({tfm}) is missing bound types: {string.Join(", ", missing)}. " +
+            $"{packageId} ({tfm}) is missing bound types: {string.Join(", ", missing)}. " +
             $"The assembly exposes {api.PublicTypes.Count} public types in total.");
     }
 
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void Binding_is_not_an_empty_shell(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworks), MemberType = typeof(Packages))]
+    public void Binding_is_not_an_empty_shell(string packageId, string tfm)
     {
-        using var api = OpenBinding(tfm);
+        using var api = OpenBinding(packageId, tfm);
 
         // Guards the real failure mode described in src/Agora.Binding.props: @(AndroidMavenLibrary)
         // silently ignored produces a valid but essentially empty assembly, which still packs and
-        // installs fine. A real binding of full-rtc-basic exposes ~300 public top-level types; the
-        // margin below that is headroom for Agora trimming their surface, not for a broken build.
+        // installs fine. A real binding of either rtc-basic artifact exposes ~300 public top-level
+        // types; the margin below that is headroom for Agora trimming their surface, not for a
+        // broken build.
         Assert.True(
             api.PublicTypes.Count >= 200,
-            $"{Packages.Video} ({tfm}) exposes only {api.PublicTypes.Count} public types; " +
+            $"{packageId} ({tfm}) exposes only {api.PublicTypes.Count} public types; " +
             "the binding generator likely did not run.");
     }
 
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void Namespace_rename_left_nothing_behind(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworks), MemberType = typeof(Packages))]
+    public void Namespace_rename_left_nothing_behind(string packageId, string tfm)
     {
-        using var api = OpenBinding(tfm);
+        using var api = OpenBinding(packageId, tfm);
 
         // @(AndroidNamespaceReplacement) maps IO.Agora.Rtc2 -> Agora.Rtc. If the replacement
         // stopped applying — a regenerated binding, a renamed item — the types would still exist
@@ -82,15 +85,15 @@ public class BindingApiTests
 
         Assert.True(
             leftovers.Count == 0,
-            $"{Packages.Video} ({tfm}) still has types under IO.Agora.Rtc2: " +
+            $"{packageId} ({tfm}) still has types under IO.Agora.Rtc2: " +
             $"{string.Join(", ", leftovers.Take(5))}…");
     }
 
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void RtcEngine_exposes_the_channel_lifecycle_entry_points(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworks), MemberType = typeof(Packages))]
+    public void RtcEngine_exposes_the_channel_lifecycle_entry_points(string packageId, string tfm)
     {
-        using var api = OpenBinding(tfm);
+        using var api = OpenBinding(packageId, tfm);
 
         var methods = api.MethodsOf("Agora.Rtc.RtcEngine");
 
@@ -102,10 +105,10 @@ public class BindingApiTests
     }
 
     [Theory]
-    [MemberData(nameof(Packages.Frameworks), MemberType = typeof(Packages))]
-    public void RtcEngineConfig_exposes_the_settable_field_properties(string tfm)
+    [MemberData(nameof(Packages.PackageFrameworks), MemberType = typeof(Packages))]
+    public void RtcEngineConfig_exposes_the_settable_field_properties(string packageId, string tfm)
     {
-        using var api = OpenBinding(tfm);
+        using var api = OpenBinding(packageId, tfm);
 
         var properties = api.PropertiesOf("Agora.Rtc.RtcEngineConfig");
 

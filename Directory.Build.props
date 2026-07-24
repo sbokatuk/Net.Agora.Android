@@ -5,15 +5,24 @@
       Package version is <native SDK version>.<binding revision>, e.g. 4.6.3.1 — the same scheme
       the sibling Net.Agora.iOS repository uses for its own (CocoaPods) line.
 
-      This repository binds nothing but Video today. io.agora.rtc:full-rtc-basic is what
-      AndroidMavenLibrary resolves the .aar from — see src/Agora.Binding.props for why
-      io.agora.rtc:full-sdk (the umbrella artifact) is deliberately not used.
+      Video binds io.agora.rtc:full-rtc-basic and Voice binds io.agora.rtc:voice-rtc-basic — the
+      same engine built without video, which is the whole point: a voice-only app should not carry
+      video codecs it never runs. See src/Agora.Binding.props for why the full-sdk/voice-sdk
+      umbrella artifacts are deliberately not used. Agora releases both artifacts from the same
+      source drop, so the two pins are expected to move together; they are separate properties
+      anyway because nothing guarantees it.
 
       The fourth component belongs to this repository and increments whenever the binding or
       packaging changes while the native artifact stays put.
     -->
     <AgoraVideoVersion>4.6.3</AgoraVideoVersion>
     <AgoraVideoBindingRevision>1</AgoraVideoBindingRevision>
+    <AgoraVoiceVersion>4.6.3</AgoraVoiceVersion>
+    <AgoraVoiceBindingRevision>1</AgoraVoiceBindingRevision>
+    <!--
+      The default for projects that do not pick their own line (tests, and the Video binding
+      itself); the Voice .csproj overrides this with its own pair.
+    -->
     <VersionPrefix>$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</VersionPrefix>
 
     <Authors>s.bokatuk</Authors>

@@ -44,15 +44,25 @@ public static class SmokeTests
     private static RtcEngine Engine =>
         _engine ?? throw new InvalidOperationException("the engine has not been created yet.");
 
+    // The AGORA_VOICE build (see the .csproj) compiles the video checks out entirely rather than
+    // branching at runtime: voice-rtc-basic ships the same Java API layer with the video pipeline
+    // stripped from the native library, so the video calls still *compile* against the voice
+    // binding — they just answer error codes that vary by call. Gating at build time keeps every
+    // remaining assertion strict.
     public static SmokeTest[] All =>
     [
         new("the Java entry points resolve from the packaged .aar", JavaEntryPointsResolve),
         new("reports the native SDK version", ReportsTheSdkVersion),
         new("answers an error description without an engine", AnswersAnErrorDescription),
         new("creates the engine from a syntactically valid App ID", CreatesTheEngine),
+#if AGORA_VOICE
+        new("enables and disables audio", EnablesAndDisablesMedia),
+        new("mutes and unmutes the local audio stream", MutesAndUnmutesLocalStreams),
+#else
         new("enables and disables video and audio", EnablesAndDisablesMedia),
         new("mutes and unmutes the local streams", MutesAndUnmutesLocalStreams),
         new("starts and stops the local preview", StartsAndStopsPreview),
+#endif
         new("destroys the engine", DestroysTheEngine),
     ];
 
@@ -153,9 +163,11 @@ public static class SmokeTests
         // None of these join anything; they flip local engine state and return an Agora error
         // code, 0 for success. The runner grants camera/microphone permission at install time so
         // a permission failure cannot masquerade as a binding one.
+#if !AGORA_VOICE
         AssertOk(Engine.EnableVideo(), "EnableVideo");
         AssertOk(Engine.DisableVideo(), "DisableVideo");
         AssertOk(Engine.EnableVideo(), "EnableVideo (again)");
+#endif
         AssertOk(Engine.EnableAudio(), "EnableAudio");
         AssertOk(Engine.DisableAudio(), "DisableAudio");
     }
@@ -164,10 +176,13 @@ public static class SmokeTests
     {
         AssertOk(Engine.MuteLocalAudioStream(true), "MuteLocalAudioStream(true)");
         AssertOk(Engine.MuteLocalAudioStream(false), "MuteLocalAudioStream(false)");
+#if !AGORA_VOICE
         AssertOk(Engine.MuteLocalVideoStream(true), "MuteLocalVideoStream(true)");
         AssertOk(Engine.MuteLocalVideoStream(false), "MuteLocalVideoStream(false)");
+#endif
     }
 
+#if !AGORA_VOICE
     private static void StartsAndStopsPreview()
     {
         // The preview is local-only — no channel, no server, but it does spin the camera pipeline
@@ -175,6 +190,7 @@ public static class SmokeTests
         AssertOk(Engine.StartPreview(), "StartPreview");
         AssertOk(Engine.StopPreview(), "StopPreview");
     }
+#endif
 
     private static void DestroysTheEngine()
     {

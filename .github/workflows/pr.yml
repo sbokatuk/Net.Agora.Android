@@ -72,3 +72,4 @@ jobs:
         run: |
           echo "### Published \`${{ needs.version.outputs.version }}\` to nuget.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- [Net.Agora.Video.Android](https://www.nuget.org/packages/Net.Agora.Video.Android/${{ needs.version.outputs.version }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [Net.Agora.Voice.Android](https://www.nuget.org/packages/Net.Agora.Voice.Android/${{ needs.version.outputs.version }})" >> "$GITHUB_STEP_SUMMARY"

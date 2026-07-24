@@ -6,6 +6,18 @@ namespace Net.Agora.Android.PackageTests;
 public static class Packages
 {
     public const string Video = "Net.Agora.Video.Android";
+    public const string Voice = "Net.Agora.Voice.Android";
+
+    /// <summary>
+    /// Every package build/packages.tsv lists, with the native .aar it is expected to carry.
+    /// Pinned rather than parsed from the .tsv: a package silently dropped from the .tsv (and so
+    /// from the pack) is a regression these tests should catch, not adapt to.
+    /// </summary>
+    public static readonly (string Id, string AarPrefix)[] All =
+    [
+        (Video, "full-rtc-basic-"),
+        (Voice, "voice-rtc-basic-"),
+    ];
 
     /// <summary>
     /// Target frameworks every package here must carry, one per SDK band pass. Pinned rather than
@@ -19,6 +31,14 @@ public static class Packages
 
     public static IEnumerable<object[]> Frameworks =>
         TargetFrameworks.Select(tfm => new object[] { tfm });
+
+    /// <summary>Every (package, target framework) pair — the axis most tests run over.</summary>
+    public static IEnumerable<object[]> PackageFrameworks =>
+        All.SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm }));
+
+    /// <summary>Like <see cref="PackageFrameworks"/>, with the expected native .aar name prefix.</summary>
+    public static IEnumerable<object[]> PackageFrameworkAars =>
+        All.SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm, p.AarPrefix }));
 
     public static string ArtifactsDirectory { get; } = ResolveArtifactsDirectory();
 
