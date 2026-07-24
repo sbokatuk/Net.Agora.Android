@@ -18,6 +18,12 @@ Chat	-
 IoT	-
 # netless's, not Agora's own, and resolved from JitPack — see the project's .csproj.
 Whiteboard	-
+# Fastboard is NOT listed yet: src/Net.Agora.Fastboard.Android exists and resolves its
+# dependencies, but class-parse still generates two colliding FastErrorEventArgs types —
+# FastRoomListener and FastReplayListener both declare onFastError and neither is registered
+# through an addXListener, so neither argsType nor managedName moves the generated name. Until that
+# is resolved the package is not packed, so a broken binding cannot ship. Its iOS counterpart
+# (Net.Agora.Fastboard.iOS) is complete and does ship.
 # The optional RTC feature extensions: native payload only, no managed API, no dependency on
 # either RTC package. See src/Agora.Extension.md for why they are shaped that way, and for what
 # is deliberately absent (screen sharing, the -ll variants, LipSync).

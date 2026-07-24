@@ -39,3 +39,15 @@ AGORA_IOT_VERSION="$(grep -oE '<AgoraIoTVersion>[^<]+' "${AGORA_REPO_ROOT}/Direc
 export AGORA_IOT_BINDING_REVISION
 AGORA_IOT_BINDING_REVISION="$(grep -oE '<AgoraIoTBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraIoTBindingRevision>//')"
 export AGORA_IOT_PACKAGE_VERSION="${AGORA_IOT_VERSION}.${AGORA_IOT_BINDING_REVISION}"
+
+export AGORA_WHITEBOARD_VERSION
+AGORA_WHITEBOARD_VERSION="$(grep -oE '<AgoraWhiteboardVersion>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraWhiteboardVersion>//')"
+export AGORA_WHITEBOARD_BINDING_REVISION
+AGORA_WHITEBOARD_BINDING_REVISION="$(grep -oE '<AgoraWhiteboardBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraWhiteboardBindingRevision>//')"
+export AGORA_WHITEBOARD_PACKAGE_VERSION="${AGORA_WHITEBOARD_VERSION}.${AGORA_WHITEBOARD_BINDING_REVISION}"
+
+export AGORA_FASTBOARD_VERSION
+AGORA_FASTBOARD_VERSION="$(grep -oE '<AgoraFastboardVersion>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraFastboardVersion>//')"
+export AGORA_FASTBOARD_BINDING_REVISION
+AGORA_FASTBOARD_BINDING_REVISION="$(grep -oE '<AgoraFastboardBindingRevision>[^<]+' "${AGORA_REPO_ROOT}/Directory.Build.props" | head -1 | sed 's/<AgoraFastboardBindingRevision>//')"
+export AGORA_FASTBOARD_PACKAGE_VERSION="${AGORA_FASTBOARD_VERSION}.${AGORA_FASTBOARD_BINDING_REVISION}"

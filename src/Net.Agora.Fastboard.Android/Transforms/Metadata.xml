@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+  <!--
+    io.agora.board.fast.ui is Fastboard's own toolbar implementation — the button, layout and
+    RecyclerView.Adapter subclasses it assembles the control bar from. class-parse cannot generate
+    most of it: the adapters subclass RecyclerView.Adapter<VH> and lose the type argument to
+    erasure, so the generated classes never satisfy the abstract onBindViewHolder (CS0534), and the
+    layouts implement FastVisiable with covariant returns the generator cannot express (CS0535).
+
+    The whole package is removed rather than patched class by class. Nothing outside Fastboard
+    constructs these: an app adds a FastboardView, and the toolbar assembles itself. The one type
+    in there a consumer *does* touch is FastUiSettings, which configures the toolbar — it stays,
+    along with the enums and the drawable, because none of them has the problem.
+  -->
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ApplianceAdapter']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ColorAdapter']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolboxAdapter']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ErrorHandleLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ExtensionButton']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ExtensionLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='FastRoomController']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='LoadingLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='OverlayLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='RedoUndoLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='RoomControllerGroup']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ScenesLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolButton']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolboxLayout']" />
+
+  <!--
+    FastRoomListener.onFastError is overloaded, so both overloads want the same
+    FastErrorEventArgs type and the generated partials merge into one class carrying both sets of
+    fields (CS0102). The one taking a FastException is the current shape; the other is renamed.
+  -->
+  <attr path="/api/package[@name='io.agora.board.fast']/interface[@name='FastRoomListener']/method[@name='onFastError' and @jni-signature='(Lio/agora/board/fast/model/FastError;)V']" name="managedName">OnFastErrorModel</attr>
+</metadata>
