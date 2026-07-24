@@ -278,6 +278,19 @@ jobs:
           sudo rm -rf /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
           df -h /
 
+      - name: Resolve this leg's package version
+        # In its own step rather than inside the emulator action's script: the action runs its
+        # script with /usr/bin/sh, and pins.sh is bash (set -o pipefail). run: steps default to
+        # bash, and the resolved version crosses over through GITHUB_ENV.
+        run: |
+          . ./build/pins.sh
+          case "${{ matrix.package }}" in
+            Video) base="${AGORA_VIDEO_PACKAGE_VERSION}" ;;
+            Voice) base="${AGORA_VOICE_PACKAGE_VERSION}" ;;
+            Signaling) base="${AGORA_SIGNALING_PACKAGE_VERSION}" ;;
+          esac
+          echo "AGORA_E2E_VERSION=${base}${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}" >> "$GITHUB_ENV"
+
       - name: Run smoke tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -287,15 +300,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: |
-            . ./build/pins.sh
-            case "${{ matrix.package }}" in
-              Video) base="${AGORA_VIDEO_PACKAGE_VERSION}" ;;
-              Voice) base="${AGORA_VOICE_PACKAGE_VERSION}" ;;
-              Signaling) base="${AGORA_SIGNALING_PACKAGE_VERSION}" ;;
-            esac
-            version="${base}${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}"
-            ./.github/scripts/run-emulator-tests.sh "${version}" "${{ matrix.target-framework }}" "${{ matrix.package }}"
+          script: ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
 
       - name: Upload emulator logs
         if: always()
