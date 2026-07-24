@@ -20,6 +20,13 @@
     <AgoraVoiceVersion>4.6.3</AgoraVoiceVersion>
     <AgoraVoiceBindingRevision>2</AgoraVoiceBindingRevision>
     <!--
+      Signaling (RTM) is a different product with its own native version line — 2.2.x, nothing to
+      do with the RTC 4.6.x line above. See build/BuildNugets.sh for how releases handle packages
+      whose versions do not move together.
+    -->
+    <AgoraSignalingVersion>2.2.6</AgoraSignalingVersion>
+    <AgoraSignalingBindingRevision>1</AgoraSignalingBindingRevision>
+    <!--
       The default for projects that do not pick their own line (tests, and the Video binding
       itself); the Voice .csproj overrides this with its own pair.
     -->

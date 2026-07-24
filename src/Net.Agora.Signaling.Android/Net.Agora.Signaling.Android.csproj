@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Signaling</AgoraPackageName>
+    <!--
+      io.agora:agora-rtm is Agora's Signaling (RTM 2.x) SDK — a different product from the RTC
+      bindings in this repository, on its own native version line (2.2.x). Unlike the RTC
+      artifacts it is self-contained: libaosl.so ships inside the .aar's jni/ directory, so there
+      is no separate infra dependency to carry.
+
+      This package coexists with either RTC package in one app — different Java packages
+      (io.agora.rtm vs io.agora.rtc2), different native libraries.
+    -->
+    <AgoraGroupId>io.agora</AgoraGroupId>
+    <AgoraArtifact>agora-rtm</AgoraArtifact>
+    <AgoraNativeVersion>$(AgoraSignalingVersion)</AgoraNativeVersion>
+    <VersionPrefix>$(AgoraSignalingVersion).$(AgoraSignalingBindingRevision)</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <!--
+    The Java package is io.agora.rtm. Renamed to Agora.Rtm, which is the namespace Agora's own
+    C# / Unity Signaling SDK uses for the same API, so consumers coming from that surface find it
+    in the expected place — the same reasoning as the RTC bindings' IO.Agora.Rtc2 -> Agora.Rtc.
+  -->
+  <ItemGroup>
+    <AndroidNamespaceReplacement Include="IO.Agora.Rtm" Replacement="Agora.Rtm" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>.NET for Android / .NET MAUI bindings for the Agora Signaling (RTM) Android SDK, generated from io.agora:agora-rtm $(AgoraSignalingVersion) on Maven Central. Lets a .NET app log in to Agora Signaling, subscribe to channels and publish/receive messages.</Description>
+    <PackageTags>$(PackageTags);Signaling;RTM;messaging;realtime</PackageTags>
+  </PropertyGroup>
+
+</Project>

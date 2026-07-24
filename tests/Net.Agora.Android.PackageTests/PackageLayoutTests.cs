@@ -19,10 +19,10 @@ public class PackageLayoutTests
         Assert.True(entry is not null, $"{packageId} is missing the assembly for {tfm}.");
 
         // The empty-shell failure mode is a real .dll, just a tiny one with no bound types — a
-        // present-but-missing check would not catch it. A binding of either rtc-basic artifact
-        // compiles to several hundred KB at minimum.
+        // present-but-missing check would not catch it. The floor is per package (see
+        // Packages.All): the RTC bindings compile to several hundred KB, Signaling to less.
         Assert.True(
-            entry!.Length > 500_000,
+            entry!.Length > Packages.MinAssemblyBytesOf(packageId),
             $"{packageId}'s assembly for {tfm} is only {entry.Length} bytes — looks like an " +
             "empty binding shell rather than a real one.");
     }
@@ -30,7 +30,7 @@ public class PackageLayoutTests
     [Theory]
     [MemberData(nameof(Packages.PackageFrameworkAars), MemberType = typeof(Packages))]
     public void Package_carries_the_native_aars_for_every_target_framework(
-        string packageId, string tfm, string aarPrefix)
+        string packageId, string tfm, string aarPrefix, long minAarBytes)
     {
         using var package = Packages.OpenPackage(packageId);
 
@@ -44,8 +44,8 @@ public class PackageLayoutTests
         var native = entries.SingleOrDefault(e => e.Name.StartsWith(aarPrefix, StringComparison.Ordinal));
         Assert.True(native is not null, $"{packageId} is missing {aarPrefix}*.aar for {tfm}.");
 
-        // Tens of MB with jniLibs for four ABIs — voice-rtc-basic is the smaller of the two at
-        // ~28 MB. Anything below the floor means a placeholder.
-        Assert.True(native!.Length > 20_000_000, $"'{native.FullName}' is only {native.Length} bytes; looks empty.");
+        // jniLibs for four ABIs put every real artifact well above its floor (see Packages.All);
+        // anything below means a placeholder.
+        Assert.True(native!.Length > minAarBytes, $"'{native.FullName}' is only {native.Length} bytes; looks empty.");
     }
 }

@@ -7,16 +7,50 @@ public static class Packages
 {
     public const string Video = "Net.Agora.Video.Android";
     public const string Voice = "Net.Agora.Voice.Android";
+    public const string Signaling = "Net.Agora.Signaling.Android";
 
     /// <summary>
-    /// Every package build/packages.tsv lists, with the native .aar it is expected to carry.
-    /// Pinned rather than parsed from the .tsv: a package silently dropped from the .tsv (and so
-    /// from the pack) is a regression these tests should catch, not adapt to.
+    /// The types a consumer of the RTC bindings starts with, all under the renamed namespace.
+    /// One list for both RTC packages: Agora ships the same Java API layer in voice-rtc-basic —
+    /// including the video types — and strips only the native video pipeline.
     /// </summary>
-    public static readonly (string Id, string AarPrefix)[] All =
+    private static readonly string[] RtcCoreTypes =
     [
-        (Video, "full-rtc-basic-"),
-        (Voice, "voice-rtc-basic-"),
+        "Agora.Rtc.RtcEngine",
+        "Agora.Rtc.RtcEngineConfig",
+        "Agora.Rtc.IRtcEngineEventHandler",
+        "Agora.Rtc.ChannelMediaOptions",
+        "Agora.Rtc.Video.VideoCanvas",
+        "Agora.Rtc.Video.VideoEncoderConfiguration",
+    ];
+
+    /// <summary>The types a consumer of the Signaling binding starts with.</summary>
+    private static readonly string[] SignalingCoreTypes =
+    [
+        "Agora.Rtm.RtmClient",
+        "Agora.Rtm.RtmConfig",
+        "Agora.Rtm.IRtmEventListener",
+        "Agora.Rtm.MessageEvent",
+        "Agora.Rtm.IResultCallback",
+    ];
+
+    /// <summary>
+    /// Every package build/packages.tsv lists, with what its packed form is expected to contain:
+    /// the native .aar (by name prefix and a size floor that rules out placeholders), the types a
+    /// consumer starts with, the Java-derived namespace prefix the rename must have emptied, and
+    /// a public-type floor that rules out an empty binding shell. Pinned rather than parsed from
+    /// the .tsv: a package silently dropped from the .tsv (and so from the pack) is a regression
+    /// these tests should catch, not adapt to.
+    /// </summary>
+    public static readonly (string Id, string AarPrefix, long MinAarBytes, long MinAssemblyBytes, string[] CoreTypes, string LegacyPrefix, int MinPublicTypes)[] All =
+    [
+        // The RTC .aars are tens of MB with jniLibs for four ABIs and bind ~300 public types
+        // into a >500 KB assembly.
+        (Video, "full-rtc-basic-", 20_000_000, 500_000, RtcCoreTypes, "IO.Agora.Rtc2", 200),
+        (Voice, "voice-rtc-basic-", 20_000_000, 500_000, RtcCoreTypes, "IO.Agora.Rtc2", 200),
+        // agora-rtm is a smaller product: a ~16 MB .aar and ~60 public types. The floors still
+        // sit far above the net8 empty-shell failure mode (a few KB, zero bound types).
+        (Signaling, "agora-rtm-", 10_000_000, 100_000, SignalingCoreTypes, "IO.Agora.Rtm", 40),
     ];
 
     /// <summary>
@@ -36,9 +70,19 @@ public static class Packages
     public static IEnumerable<object[]> PackageFrameworks =>
         All.SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm }));
 
-    /// <summary>Like <see cref="PackageFrameworks"/>, with the expected native .aar name prefix.</summary>
+    /// <summary>Like <see cref="PackageFrameworks"/>, with the expected native .aar name and floor.</summary>
     public static IEnumerable<object[]> PackageFrameworkAars =>
-        All.SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm, p.AarPrefix }));
+        All.SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm, p.AarPrefix, p.MinAarBytes }));
+
+    public static long MinAssemblyBytesOf(string packageId) => Row(packageId).MinAssemblyBytes;
+
+    /// <summary>The RTC packages only — the axis of the RtcEngine-specific member checks.</summary>
+    public static IEnumerable<object[]> RtcPackageFrameworks =>
+        All.Where(p => p.LegacyPrefix == "IO.Agora.Rtc2")
+            .SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm }));
+
+    public static (string Id, string AarPrefix, long MinAarBytes, long MinAssemblyBytes, string[] CoreTypes, string LegacyPrefix, int MinPublicTypes) Row(string packageId) =>
+        All.Single(p => p.Id == packageId);
 
     public static string ArtifactsDirectory { get; } = ResolveArtifactsDirectory();
 

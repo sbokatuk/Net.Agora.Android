@@ -13,12 +13,13 @@ Two products are bound, from `net8.0-android` through `net10.0-android`:
 | --- | --- | --- |
 | `Net.Agora.Video.Android` | [`io.agora.rtc:full-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic) | The app shows or sends video (also carries the full audio surface). |
 | `Net.Agora.Voice.Android` | [`io.agora.rtc:voice-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/voice-rtc-basic) | Audio only — the same engine built without the video pipeline, a ~20 MB smaller `.aar`. |
+| `Net.Agora.Signaling.Android` | [`io.agora:agora-rtm`](https://central.sonatype.com/artifact/io.agora/agora-rtm) | Realtime messaging (Signaling / RTM 2.x, its own 2.2.x version line) — coexists with either RTC package. |
 
 ```bash
 dotnet add package Net.Agora.Video.Android   # or Net.Agora.Voice.Android
 ```
 
-Pick **one**: both `.aar`s carry the same Java classes (`io.agora.rtc2.*`), so referencing both
+Pick **one of the RTC pair**: both `.aar`s carry the same Java classes (`io.agora.rtc2.*`), so referencing both
 fails the build at dex merge — mirroring Agora's own artifacts, where an app depends on the full
 or the voice SDK, never both. For the same reason both bindings expose the same `Agora.Rtc`
 namespace (renamed from `io.agora.rtc2` to match Agora's own C# / Unity SDK naming), so an app can
