@@ -93,7 +93,7 @@ jobs:
             fi
             echo "## Packages"
             echo
-            echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\`, io.agora.rtc:voice-rtc-basic \`${AGORA_VOICE_VERSION}\`, io.agora:agora-rtm \`${AGORA_SIGNALING_VERSION}\`, io.agora.rtc:chat-sdk \`${AGORA_CHAT_VERSION}\` and io.agora:iotsdk \`${AGORA_IOT_VERSION}\` (Maven Central). Each package publishes at its own version line; a row whose version did not move since the previous train was skipped by the push, not republished."
+            echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\`, io.agora.rtc:voice-rtc-basic \`${AGORA_VOICE_VERSION}\`, io.agora:agora-rtm \`${AGORA_SIGNALING_VERSION}\`, io.agora.rtc:chat-sdk \`${AGORA_CHAT_VERSION}\` io.agora:iotsdk \`${AGORA_IOT_VERSION}\` (Maven Central), and netless-io's whiteboard-android \`${AGORA_WHITEBOARD_VERSION}\` and fastboard-android \`${AGORA_FASTBOARD_VERSION}\` (JitPack). Each package publishes at its own version line; a row whose version did not move since the previous train was skipped by the push, not republished."
             echo
             echo "| Package | NuGet |"
             echo "| --- | --- |"
@@ -101,6 +101,8 @@ jobs:
             echo "| \`Net.Agora.Voice.Android\` | [${AGORA_VOICE_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Voice.Android/${AGORA_VOICE_PACKAGE_VERSION}) |"
             echo "| \`Net.Agora.Signaling.Android\` | [${AGORA_SIGNALING_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Signaling.Android/${AGORA_SIGNALING_PACKAGE_VERSION}) |"
             echo "| \`Net.Agora.Chat.Android\` | [${AGORA_CHAT_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Chat.Android/${AGORA_CHAT_PACKAGE_VERSION}) |"
+            echo "| \`Net.Agora.Whiteboard.Android\` | [${AGORA_WHITEBOARD_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Whiteboard.Android/${AGORA_WHITEBOARD_PACKAGE_VERSION}) |"
+            echo "| \`Net.Agora.Fastboard.Android\` | [${AGORA_FASTBOARD_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Fastboard.Android/${AGORA_FASTBOARD_PACKAGE_VERSION}) |"
             echo "| \`Net.Agora.IoT.Android\` | [${AGORA_IOT_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.IoT.Android/${AGORA_IOT_PACKAGE_VERSION}) |"
             echo "| \`Net.Agora.Extensions.*.Android\` (12) | [${AGORA_VIDEO_PACKAGE_VERSION}](https://www.nuget.org/packages?q=Net.Agora.Extensions) |"
           } > release-notes.md
