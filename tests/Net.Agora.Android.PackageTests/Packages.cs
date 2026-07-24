@@ -8,6 +8,8 @@ public static class Packages
     public const string Video = "Net.Agora.Video.Android";
     public const string Voice = "Net.Agora.Voice.Android";
     public const string Signaling = "Net.Agora.Signaling.Android";
+    public const string Chat = "Net.Agora.Chat.Android";
+    public const string IoT = "Net.Agora.IoT.Android";
 
     /// <summary>
     /// The types a consumer of the RTC bindings starts with, all under the renamed namespace.
@@ -34,6 +36,27 @@ public static class Packages
         "Agora.Rtm.IResultCallback",
     ];
 
+    /// <summary>The types a consumer of the Chat binding starts with.</summary>
+    private static readonly string[] ChatCoreTypes =
+    [
+        "Agora.Chat.ChatClient",
+        "Agora.Chat.ChatOptions",
+        "Agora.Chat.ChatManager",
+        "Agora.Chat.ChatMessage",
+        "Agora.Chat.Conversation",
+        "IO.Agora.ICallBack",
+    ];
+
+    /// <summary>The types a consumer of the IoT binding starts with.</summary>
+    private static readonly string[] IoTCoreTypes =
+    [
+        "Agora.IoT.AIotAppSdkFactory",
+        "Agora.IoT.IAgoraIotAppSdk",
+        "Agora.IoT.ICallkitMgr",
+        "Agora.IoT.IDeviceMgr",
+        "Agora.IoT.IAccountMgr",
+    ];
+
     /// <summary>
     /// Every package build/packages.tsv lists, with what its packed form is expected to contain:
     /// the native .aar (by name prefix and a size floor that rules out placeholders), the types a
@@ -51,7 +74,49 @@ public static class Packages
         // agora-rtm is a smaller product: a ~16 MB .aar and ~60 public types. The floors still
         // sit far above the net8 empty-shell failure mode (a few KB, zero bound types).
         (Signaling, "agora-rtm-", 10_000_000, 100_000, SignalingCoreTypes, "IO.Agora.Rtm", 40),
+        // chat-sdk is a ~15 MB .aar (three .so files for four ABIs) binding ~350 public types
+        // into a ~2 MB assembly. IO.Agora is deliberately *not* the legacy prefix to check: only
+        // io.agora.chat is renamed, so the callback interfaces in the bare io.agora package keep
+        // their generated IO.Agora namespace — see the binding's csproj.
+        (Chat, "chat-sdk-", 10_000_000, 500_000, ChatCoreTypes, "IO.Agora.Chat", 200),
+        // iotsdk is the biggest .aar here by far — 80 MB, because it bundles private copies of the
+        // RTC and Signaling SDKs — but the *bound* surface is the smallest of the four, since
+        // everything except io.agora.iotlink is removed (Transforms/Metadata.xml).
+        (IoT, "iotsdk-", 50_000_000, 200_000, IoTCoreTypes, "IO.Agora.Iotlink", 40),
     ];
+
+    /// <summary>
+    /// The optional RTC feature extensions, with the native .aar each must carry and a size floor
+    /// that rules out a placeholder. Deliberately a separate table from <see cref="All"/>: these
+    /// packages bind nothing (every one of these .aars has a 22-byte empty classes.jar and only
+    /// jni/&lt;abi&gt;/*.so — see src/Agora.Extension.md), so the assembly-size and public-type
+    /// floors that catch an empty *binding* shell would be exactly backwards here. What matters
+    /// instead is that the payload is present for every target framework and that the package
+    /// pulls in neither RTC binding.
+    /// </summary>
+    public static readonly (string Id, string AarPrefix, long MinAarBytes)[] Extensions =
+    [
+        ("Net.Agora.Extensions.Ains.Android", "ains-", 4_000_000),
+        ("Net.Agora.Extensions.Aiaec.Android", "aiaec-", 3_000_000),
+        ("Net.Agora.Extensions.AudioBeauty.Android", "audio-beauty-", 2_500_000),
+        ("Net.Agora.Extensions.SpatialAudio.Android", "spatial-audio-", 10_000_000),
+        ("Net.Agora.Extensions.VirtualBackground.Android", "full-virtual-background-", 2_000_000),
+        ("Net.Agora.Extensions.ContentInspect.Android", "full-content-inspect-", 1_500_000),
+        ("Net.Agora.Extensions.ClearVision.Android", "clear-vision-", 6_000_000),
+        ("Net.Agora.Extensions.FaceCapture.Android", "full-face-capture-", 2_000_000),
+        ("Net.Agora.Extensions.FaceDetection.Android", "full-face-detect-", 800_000),
+        ("Net.Agora.Extensions.VideoQualityAnalyzer.Android", "full-vqa-", 1_500_000),
+        ("Net.Agora.Extensions.VideoEncoder.Android", "full-video-codec-enc-", 3_000_000),
+        ("Net.Agora.Extensions.Av1Encoder.Android", "full-video-av1-codec-enc-", 2_000_000),
+    ];
+
+    /// <summary>Every (extension package, target framework) pair, with its expected .aar.</summary>
+    public static IEnumerable<object[]> ExtensionFrameworkAars =>
+        Extensions.SelectMany(e => TargetFrameworks.Select(tfm => new object[] { e.Id, tfm, e.AarPrefix, e.MinAarBytes }));
+
+    /// <summary>Every extension package id.</summary>
+    public static IEnumerable<object[]> ExtensionIds =>
+        Extensions.Select(e => new object[] { e.Id });
 
     /// <summary>
     /// Target frameworks every package here must carry, one per SDK band pass. Pinned rather than

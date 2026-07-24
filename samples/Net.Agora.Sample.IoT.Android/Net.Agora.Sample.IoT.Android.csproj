@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MAUI sample that initialises Agora.IoT.AIotAppSdkFactory's SDK against the raw binding, reports
+    its state machine and releases it. Unlike this repository's other samples there is no
+    cross-platform counterpart in sbokatuk/Net.Agora to point at: Agora ships no iOS IoT SDK, so
+    the Android binding is the whole product.
+
+    Consumes the packed Net.Agora.IoT.Android package from artifacts/ (see NuGet.config), so it
+    exercises the package exactly as a MAUI consumer would. It can reference no other Net.Agora
+    package: the IoT .aar bundles its own copies of the RTC and Signaling SDKs, so a second one
+    fails the dex merge.
+
+    One target framework, net10.0-android36.0, mirroring DatadogNet.Android's sample: the sample is
+    a compile check on the public API plus a runnable demo, and one MAUI head is enough for both —
+    the package's other target frameworks are exercised by the device tests. Building this needs
+    the .NET 10 SDK, which the repository's global.json does not select — see the README.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.0</TargetFramework>
+
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Net.Agora.Sample.IoT.Android</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <CheckEolWorkloads>false</CheckEolWorkloads>
+
+    <ApplicationTitle>Net.Agora IoT Sample</ApplicationTitle>
+    <ApplicationId>com.sbokatuk.agora.sample.iot</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+    <MauiFont Include="Resources\Fonts\*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      Defaults to the version in Directory.Build.props so a plain build after "build/BuildNugets.sh"
+      works; override with -p:AgoraIoTPackageVersion=... to test a specific build.
+    -->
+    <AgoraIoTPackageVersion Condition=" '$(AgoraIoTPackageVersion)' == '' ">$(AgoraIoTVersion).$(AgoraIoTBindingRevision)</AgoraIoTPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
+
+    <!--
+      Exact version, in brackets — a bare version is a *minimum* to NuGet, so a build missing from
+      artifacts/ would silently resolve from nuget.org instead of failing the restore.
+    -->
+    <PackageReference Include="Net.Agora.IoT.Android" Version="[$(AgoraIoTPackageVersion)]" />
+  </ItemGroup>
+
+</Project>

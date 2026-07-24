@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Extensions.AudioBeauty</AgoraPackageName>
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>audio-beauty</AgoraArtifact>
+    <!--
+      Extensions ride the RTC version line: Agora builds them from the same source drop as
+      full-rtc-basic / voice-rtc-basic and publishes them under the same version, so there is no
+      separate pin.
+    -->
+    <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+    <!--
+      Nothing to bind: audio-beauty's classes.jar is 22 bytes — an empty archive — and the
+      whole .aar is jni/<abi>/*.so. See src/Agora.Extension.md for what that means for this
+      package's shape.
+    -->
+    <AgoraBindArtifact>false</AgoraBindArtifact>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <PropertyGroup>
+    <Title>The Agora voice effects and beautification extension for .NET for Android.</Title>
+    <Description>The native payload for Agora's voice effects and beautification extension (audio-beauty $(AgoraVideoVersion) on Maven Central), packaged for .NET for Android. The voice changers, equalisation presets and room-reverb effects — the chipmunk voice, the concert-hall reverb, the "studio" polish on a plain microphone. Add it alongside Net.Agora.Video.Android or Net.Agora.Voice.Android — it carries no managed API of its own; the switch that turns it on is RtcEngine.SetVoiceBeautifierPreset / SetAudioEffectPreset in the RTC binding.</Description>
+    <PackageTags>$(PackageTags);RTC;extension;voice;effects;and;beautification</PackageTags>
+  </PropertyGroup>
+
+</Project>

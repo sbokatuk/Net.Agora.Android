@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Extensions.FaceCapture</AgoraPackageName>
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>full-face-capture</AgoraArtifact>
+    <!--
+      Extensions ride the RTC version line: Agora builds them from the same source drop as
+      full-rtc-basic / voice-rtc-basic and publishes them under the same version, so there is no
+      separate pin.
+    -->
+    <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+    <!--
+      Nothing to bind: full-face-capture's classes.jar is 22 bytes — an empty archive — and the
+      whole .aar is jni/<abi>/*.so. See src/Agora.Extension.md for what that means for this
+      package's shape.
+    -->
+    <AgoraBindArtifact>false</AgoraBindArtifact>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <PropertyGroup>
+    <Title>The Agora facial expression capture extension for .NET for Android.</Title>
+    <Description>The native payload for Agora's facial expression capture extension (full-face-capture $(AgoraVideoVersion) on Maven Central), packaged for .NET for Android. Tracks facial expression coefficients from the camera, for driving an avatar rather than sending the camera image itself. Add it alongside Net.Agora.Video.Android or Net.Agora.Voice.Android — it carries no managed API of its own; the switch that turns it on is RtcEngine.RegisterFaceInfoObserver in the RTC binding.</Description>
+    <PackageTags>$(PackageTags);RTC;extension;facial;expression;capture</PackageTags>
+  </PropertyGroup>
+
+</Project>

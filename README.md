@@ -7,13 +7,23 @@
 
 .NET for Android and .NET MAUI bindings for Agora's native Android SDKs.
 
-Two products are bound, from `net8.0-android` through `net10.0-android`:
+Five products are bound, from `net8.0-android` through `net10.0-android`:
 
 | Package | Native artifact | Use it when |
 | --- | --- | --- |
 | `Net.Agora.Video.Android` | [`io.agora.rtc:full-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic) | The app shows or sends video (also carries the full audio surface). |
 | `Net.Agora.Voice.Android` | [`io.agora.rtc:voice-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/voice-rtc-basic) | Audio only — the same engine built without the video pipeline, a ~20 MB smaller `.aar`. |
 | `Net.Agora.Signaling.Android` | [`io.agora:agora-rtm`](https://central.sonatype.com/artifact/io.agora/agora-rtm) | Realtime messaging (Signaling / RTM 2.x, its own 2.2.x version line) — coexists with either RTC package. |
+| `Net.Agora.Chat.Android` | [`io.agora.rtc:chat-sdk`](https://central.sonatype.com/artifact/io.agora.rtc/chat-sdk) | Persistent messaging (Chat / IM 1.x, its own version line) — coexists with everything else here. |
+| `Net.Agora.IoT.Android` | [`io.agora:iotsdk`](https://central.sonatype.com/artifact/io.agora/iotsdk) | Agora IoT devices (1.3.x). **Android only** — there is no iOS SDK, so no cross-platform client — and **exclusive with every package above**, whose native artifacts it bundles its own copies of. |
+
+Alongside them, twelve `Net.Agora.Extensions.<Name>.Android` packages carry the RTC SDK's optional
+features — AI noise suppression, virtual background, spatial audio, the video enhancement filters,
+the software encoders and the rest. They are native payload only: the switch that turns each one on
+already exists on `Agora.Rtc.RtcEngine`, and what these packages add is the `.so` the engine loads
+when it is flipped. Add one alongside either RTC package — they depend on neither, so they do not
+force a flavour. See [src/Agora.Extension.md](src/Agora.Extension.md) for the full list and for
+what is deliberately absent.
 
 ```bash
 dotnet add package Net.Agora.Video.Android   # or Net.Agora.Voice.Android

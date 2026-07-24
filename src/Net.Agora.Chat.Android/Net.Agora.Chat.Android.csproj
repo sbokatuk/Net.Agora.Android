@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Chat</AgoraPackageName>
+    <!--
+      io.agora.rtc:chat-sdk is Agora's Chat (IM) SDK — a third product, on its own native version
+      line (1.4.x), unrelated to both the RTC 4.6.x line and Signaling's RTM 2.2.x.
+
+      Unlike the RTC artifacts it is self-contained: libaosl.so ships inside the .aar's jni/
+      directory alongside libagora-chat-sdk.so and libcipherdb.so, so there is no separate infra
+      dependency to carry. Its .pom declares no dependencies at all.
+
+      This package coexists with any of the RTC or Signaling packages in one app — different Java
+      packages (io.agora.chat vs io.agora.rtc2 / io.agora.rtm), different native libraries.
+    -->
+    <AgoraGroupId>io.agora.rtc</AgoraGroupId>
+    <AgoraArtifact>chat-sdk</AgoraArtifact>
+    <AgoraNativeVersion>$(AgoraChatVersion)</AgoraNativeVersion>
+    <VersionPrefix>$(AgoraChatVersion).$(AgoraChatBindingRevision)</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <!--
+    The Java package is io.agora.chat. Renamed to Agora.Chat, which is the namespace Agora's own
+    C# / Unity Chat SDK uses for the same API — the same reasoning as the RTC bindings'
+    IO.Agora.Rtc2 -> Agora.Rtc and Signaling's IO.Agora.Rtm -> Agora.Rtm.
+
+    The aar's other packages (io.agora itself, which holds the CallBack / ConnectionListener /
+    MessageListener callback interfaces, plus io.agora.cloud, io.agora.exceptions and
+    io.agora.util) keep their generated IO.Agora* namespaces, exactly as IO.Agora.Base and
+    IO.Agora.Spatialaudio do in the Video binding: only the product's own namespace is renamed.
+  -->
+  <ItemGroup>
+    <AndroidNamespaceReplacement Include="IO.Agora.Chat" Replacement="Agora.Chat" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      CS0465: the Chat SDK overrides Java's Object.finalize() on ~40 of its model classes, and the
+      generator binds each as a `Finalize()` method, which C# reads as shadowing the destructor.
+      That is what a binding of a Java finalizer looks like; the SDK's own cleanup still runs
+      through the Java side. Suppressed here rather than in Agora.Binding.props because no other
+      Agora SDK in this repository does this.
+    -->
+    <NoWarn>$(NoWarn);CS0465</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>.NET for Android / .NET MAUI bindings for the Agora Chat (IM) Android SDK, generated from io.agora.rtc:chat-sdk $(AgoraChatVersion) on Maven Central. Lets a .NET app log in to Agora Chat, send and receive messages and work with conversations.</Description>
+    <PackageTags>$(PackageTags);Chat;IM;messaging;realtime</PackageTags>
+  </PropertyGroup>
+
+</Project>
