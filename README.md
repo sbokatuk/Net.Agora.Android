@@ -7,7 +7,7 @@
 
 .NET for Android and .NET MAUI bindings for Agora's native Android SDKs.
 
-Five products are bound, from `net8.0-android` through `net10.0-android`:
+Six products are bound, from `net8.0-android` through `net10.0-android`:
 
 | Package | Native artifact | Use it when |
 | --- | --- | --- |

@@ -29,9 +29,27 @@
   <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolboxLayout']" />
 
   <!--
-    FastRoomListener.onFastError is overloaded, so both overloads want the same
-    FastErrorEventArgs type and the generated partials merge into one class carrying both sets of
-    fields (CS0102). The one taking a FastException is the current shape; the other is renamed.
+    The replay surface — playback of a recorded session — is not bound.
+
+    Two reasons, and the second is the one that decides it.
+
+    It cannot stay as it is: FastReplayListener and FastRoomListener both declare onFastError and
+    both live in io.agora.board.fast, so the generator emits a FastErrorEventArgs partial for each
+    and the two merge into a single class carrying both sets of fields (CS0102). A rename would
+    fix that much — the Chat binding does exactly that for its chat-room listener.
+
+    But it should not stay at all: replay is playback of a recorded session, a separate feature
+    from drawing on a live board. Net.Agora.Fastboard does not expose it, and neither does this
+    repository's iOS counterpart — the shim in sbokatuk/Net.Agora.iOS's native/AgoraFastboardBridge
+    — so binding it on one platform only would be an asymmetry with nothing behind it. Renaming to
+    keep a surface no façade reaches would be the worse trade.
+
+    The classes stay in the .aar; what is removed is the managed view of them. Re-attempt this the
+    day replay is worth exposing, on both platforms.
   -->
-  <attr path="/api/package[@name='io.agora.board.fast']/interface[@name='FastRoomListener']/method[@name='onFastError' and @jni-signature='(Lio/agora/board/fast/model/FastError;)V']" name="managedName">OnFastErrorModel</attr>
+  <remove-node path="/api/package[@name='io.agora.board.fast']/interface[@name='FastReplayListener']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast']/interface[@name='OnReplayReadyCallback']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast']/class[@name='FastReplay']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.internal']/class[@name='FastReplayContext']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.model']/class[@name='FastReplayOptions']" />
 </metadata>

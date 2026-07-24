@@ -11,6 +11,7 @@ public static class Packages
     public const string Chat = "Net.Agora.Chat.Android";
     public const string IoT = "Net.Agora.IoT.Android";
     public const string Whiteboard = "Net.Agora.Whiteboard.Android";
+    public const string Fastboard = "Net.Agora.Fastboard.Android";
 
     /// <summary>
     /// The types a consumer of the RTC bindings starts with, all under the renamed namespace.
@@ -68,6 +69,16 @@ public static class Packages
         "Agora.Whiteboard.RoomParams",
     ];
 
+    /// <summary>The types a consumer of the Fastboard binding starts with.</summary>
+    private static readonly string[] FastboardCoreTypes =
+    [
+        "Agora.Fastboard.Fastboard",
+        "Agora.Fastboard.FastboardView",
+        "Agora.Fastboard.FastRoom",
+        "Agora.Fastboard.IFastRoomListener",
+        "Agora.Fastboard.Model.FastRoomOptions",
+    ];
+
     /// <summary>
     /// Every package build/packages.tsv lists, with what its packed form is expected to contain:
     /// the native .aar (by name prefix and a size floor that rules out placeholders), the types a
@@ -97,6 +108,9 @@ public static class Packages
         // The one .aar here with no native code at all: the Interactive Whiteboard is a WebView
         // SDK, so its 1 MB .aar is Java and a JS bundle. Its floors are correspondingly low.
         (Whiteboard, "whiteboard-android-", 500_000, 300_000, WhiteboardCoreTypes, "Com.Herewhite.Sdk", 100),
+        // Smaller again: Fastboard is a UI layer, so its .aar is layouts, drawables and a few
+        // dozen classes over the whiteboard binding it depends on.
+        (Fastboard, "fastboard-android-", 200_000, 100_000, FastboardCoreTypes, "IO.Agora.Board.Fast", 40),
     ];
 
     /// <summary>

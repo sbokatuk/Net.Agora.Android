@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.IoT.Android", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Whiteboard.Android", "src\Net.Agora.Whiteboard.Android\Net.Agora.Whiteboard.Android.csproj", "{CBBC76A2-2727-42D4-8937-12C3164A0CCC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net.Agora.Fastboard.Android", "src\Net.Agora.Fastboard.Android\Net.Agora.Fastboard.Android.csproj", "{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -297,6 +299,18 @@ Global
 		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x64.Build.0 = Release|Any CPU
 		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x86.ActiveCfg = Release|Any CPU
 		{CBBC76A2-2727-42D4-8937-12C3164A0CCC}.Release|x86.Build.0 = Release|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Debug|x64.Build.0 = Debug|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Debug|x86.Build.0 = Debug|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Release|x64.ActiveCfg = Release|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Release|x64.Build.0 = Release|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Release|x86.ActiveCfg = Release|Any CPU
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -322,5 +336,6 @@ Global
 		{44F35ABA-9EF0-4BB6-832D-F5357A7B27EA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C17A69A3-2962-4DC6-8BBA-FFE2C44BAD86} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{CBBC76A2-2727-42D4-8937-12C3164A0CCC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{94F4EAD7-BAC0-4310-8B67-8E609F8C5D06} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
