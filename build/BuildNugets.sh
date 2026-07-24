@@ -5,8 +5,13 @@ set -e
 # Builds and packs every Agora Android binding package listed in build/packages.tsv.
 #
 # Usage:
-#   ./build/BuildNugets.sh                 # version from Directory.Build.props
-#   ./build/BuildNugets.sh 4.6.3.1-rc.1    # explicit package version
+#   ./build/BuildNugets.sh                       # each package at its own version (see below)
+#   ./build/BuildNugets.sh --suffix beta.12.34   # same, with a prerelease suffix appended
+#
+# Each package packs at its own <VersionPrefix> from Directory.Build.props: the packages sit on
+# independent native version lines (RTC 4.6.x, RTM 2.2.x), so no single version can be stamped
+# across the set — which is why there is no way to pass one. Releases publish whatever versions
+# the pins say, and nuget.org's --skip-duplicate makes republishing an unchanged version a no-op.
 #
 # Nothing needs fetching first: the .aar files are resolved from Maven Central by
 # AndroidMavenLibrary (net9+) or downloaded directly by the net8.0-android34.0 fallback target —
@@ -22,7 +27,19 @@ set -e
 
 cd "$(dirname "$0")"
 
-VERSION="$1"
+SUFFIX=""
+case "${1:-}" in
+    "") ;;
+    --suffix)
+        SUFFIX="${2:?--suffix needs a value}"
+        ;;
+    *)
+        echo "error: unknown argument '$1' (a single version cannot be stamped across" >&2
+        echo "       independent version lines — use --suffix for prereleases)" >&2
+        exit 2
+        ;;
+esac
+
 ROOT="$(cd .. && pwd)"
 OUTPUT="$ROOT/artifacts"
 
@@ -38,14 +55,14 @@ if [ -z "$PACKAGES" ]; then
 fi
 
 VERSION_ARG=""
-if [ -n "$VERSION" ]; then
-    case "$VERSION" in
-        *[!A-Za-z0-9.+_-]*)
-            echo "error: invalid version '$VERSION'" >&2
+if [ -n "$SUFFIX" ]; then
+    case "$SUFFIX" in
+        *[!A-Za-z0-9.-]*)
+            echo "error: invalid suffix '$SUFFIX'" >&2
             exit 1
             ;;
     esac
-    VERSION_ARG="-p:Version=$VERSION"
+    VERSION_ARG="-p:VersionSuffix=$SUFFIX"
 fi
 
 mkdir -p "$OUTPUT"

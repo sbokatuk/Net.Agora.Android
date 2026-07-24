@@ -1,13 +1,19 @@
 using Agora.Rtc;
 using Agora.Rtc.Video;
+using Agora.Rtm;
 
 namespace Net.Agora.Sample.Android;
 
 /// <summary>
 /// Creates <see cref="RtcEngine"/> directly against the raw binding and shows the local camera
-/// preview. Deliberately minimal: no channel is joined, so it runs with nothing but an App ID —
-/// the full join/publish/subscribe flow, wrapped behind a cross-platform API, is
-/// Net.Agora/samples/Net.Agora.Sample in the façade repository.
+/// preview, with the front/back flip the raw surface exposes. Deliberately minimal: no channel
+/// is joined, so it runs with nothing but an App ID — the full join/publish/subscribe flow,
+/// wrapped behind a cross-platform API, is Net.Agora/samples/Net.Agora.Sample in the façade
+/// repository.
+///
+/// The Signaling button drives <see cref="RtmClient"/> from the same app: the two products
+/// coexist (different Java packages, different native libraries), which this sample proves at
+/// dex-merge time just by building.
 /// </summary>
 public partial class MainPage : ContentPage
 {
@@ -72,7 +78,57 @@ public partial class MainPage : ContentPage
 
         _engine = engine;
         SetPreviewing(true);
-        Append("previewing");
+        Append("previewing — Flip switches the camera");
+    }
+
+    private void OnFlipClicked(object sender, EventArgs e)
+    {
+        // Raw surface: an Agora error code comes back, 0 for success — the façade hides this.
+        var code = _engine?.SwitchCamera() ?? -1;
+        Append(code == 0 ? "camera switched" : $"switchCamera returned {code}");
+    }
+
+    private void OnSignalingClicked(object sender, EventArgs e)
+    {
+        var appId = AppIdEntry.Text?.Trim();
+        if (string.IsNullOrEmpty(appId))
+        {
+            Append("enter an App ID first");
+            return;
+        }
+
+        // The raw RTM surface, from the same process the RTC engine runs in. Login is a live
+        // signalling call reported through a ResultCallback; with an unregistered App ID it
+        // answers an error, which is exactly what this demo shows — the round trip, credentials
+        // or not. The façade's Net.Agora.Signaling wraps this into awaitable calls.
+        try
+        {
+            var config = new RtmConfig.Builder(appId, "net-agora-sample").Build();
+            var rtm = RtmClient.Create(config);
+            Append($"RTM created — logging in…");
+
+            rtm!.Login(appId, new LoginCallback(this, rtm));
+        }
+        catch (Java.Lang.Exception exception)
+        {
+            Append($"RTM rejected the configuration: {exception.Message}");
+        }
+    }
+
+    private sealed class LoginCallback(MainPage owner, RtmClient client) : Java.Lang.Object, IResultCallback
+    {
+        public void OnSuccess(Java.Lang.Object? responseInfo)
+        {
+            owner.Append("RTM login succeeded");
+            client.Logout(null);
+            RtmClient.Release();
+        }
+
+        public void OnFailure(ErrorInfo? errorInfo)
+        {
+            owner.Append($"RTM login answered: {errorInfo?.ErrorReason ?? "unknown"}");
+            RtmClient.Release();
+        }
     }
 
     private void OnStopClicked(object sender, EventArgs e)
@@ -96,6 +152,7 @@ public partial class MainPage : ContentPage
     {
         StartButton.IsEnabled = !previewing;
         StopButton.IsEnabled = previewing;
+        FlipButton.IsEnabled = previewing;
     }
 
     private void Append(string message) => MainThread.BeginInvokeOnMainThread(() =>

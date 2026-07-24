@@ -13,12 +13,13 @@ Two products are bound, from `net8.0-android` through `net10.0-android`:
 | --- | --- | --- |
 | `Net.Agora.Video.Android` | [`io.agora.rtc:full-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic) | The app shows or sends video (also carries the full audio surface). |
 | `Net.Agora.Voice.Android` | [`io.agora.rtc:voice-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/voice-rtc-basic) | Audio only — the same engine built without the video pipeline, a ~20 MB smaller `.aar`. |
+| `Net.Agora.Signaling.Android` | [`io.agora:agora-rtm`](https://central.sonatype.com/artifact/io.agora/agora-rtm) | Realtime messaging (Signaling / RTM 2.x, its own 2.2.x version line) — coexists with either RTC package. |
 
 ```bash
 dotnet add package Net.Agora.Video.Android   # or Net.Agora.Voice.Android
 ```
 
-Pick **one**: both `.aar`s carry the same Java classes (`io.agora.rtc2.*`), so referencing both
+Pick **one of the RTC pair**: both `.aar`s carry the same Java classes (`io.agora.rtc2.*`), so referencing both
 fails the build at dex merge — mirroring Agora's own artifacts, where an app depends on the full
 or the voice SDK, never both. For the same reason both bindings expose the same `Agora.Rtc`
 namespace (renamed from `io.agora.rtc2` to match Agora's own C# / Unity SDK naming), so an app can
@@ -126,12 +127,19 @@ AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 n
 
 ## Sample
 
-`samples/Net.Agora.Sample.Android` is a MAUI app built straight against this package — no
-cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview: an
-App ID entry, camera/microphone permission handling, and a `SurfaceView` behind a small MAUI
-handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrapped view). The
-full join/publish/subscribe flow, wrapped behind one cross-platform API, is
-[`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s sample.
+`samples/Net.Agora.Sample.Android` is a MAUI app built straight against the packages — no
+cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview
+with a front/back flip: an App ID entry, camera/microphone permission handling, and a
+`SurfaceView` behind a small MAUI handler (see its `AgoraVideoView.cs` for why a custom handler
+rather than a wrapped view). Its **Try Signaling** button drives `Agora.Rtm.RtmClient` from the
+same app — the coexistence of the two products, proven at dex-merge time just by building.
+
+`samples/Net.Agora.Sample.Voice.Android` is its audio-only sibling against
+`Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
+reports, with no camera permission anywhere.
+
+The full join/publish/subscribe flows, wrapped behind one cross-platform API, are
+[`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s samples.
 
 It consumes the packed `Net.Agora.Video.Android` package from `./artifacts` (see `NuGet.config`),
 so pack first. It targets `net10.0-android36.0` and needs the **.NET 10 SDK** with the

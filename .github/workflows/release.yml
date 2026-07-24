@@ -12,38 +12,14 @@ permissions:
   contents: read
 
 jobs:
-  version:
-    name: resolve release version
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.resolve.outputs.version }}
-      prerelease: ${{ steps.resolve.outputs.prerelease }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - id: resolve
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          if ! printf '%s' "${version}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::tag '${GITHUB_REF_NAME}' does not look like a version (expected e.g. v4.6.3.1)"
-            exit 1
-          fi
-
-          case "${version}" in
-            *-*) prerelease=true ;;
-            *)   prerelease=false ;;
-          esac
-
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "prerelease=${prerelease}" >> "$GITHUB_OUTPUT"
-          echo "Releasing ${version} (prerelease=${prerelease})" >> "$GITHUB_STEP_SUMMARY"
-
+  # The tag is the release train's label, not a version to stamp: the packages sit on
+  # independent native version lines (RTC 4.6.x, RTM 2.2.x) and each publishes at its own pin
+  # from Directory.Build.props. Republishing a package whose pin did not move is a no-op — the
+  # push below uses --skip-duplicate.
   build:
     name: build
-    needs: version
     uses: ./.github/workflows/build.yml
     with:
-      version: ${{ needs.version.outputs.version }}
       # The sample is a compile check on the public API, and the commit being tagged has already
       # been through it on its pull request. Building it again here would put a MAUI workload
       # install between the package being built and being published, for a result already known.
@@ -51,14 +27,12 @@ jobs:
 
   publish:
     name: publish to nuget.org and create release
-    needs: [version, build]
+    needs: [build]
     runs-on: ubuntu-latest
     environment: nuget.org
     permissions:
       contents: write
       id-token: write
-    env:
-      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,11 +67,9 @@ jobs:
           . ./build/pins.sh
           previous=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
 
-          # A curated docs/release-notes/<version>.md replaces the generated commit list when one
-          # exists. The second lookup drops the prerelease suffix, so v4.6.3.1-beta.2 reuses the
-          # notes written for 4.6.3.1 rather than silently falling back to raw commit subjects.
-          notes="docs/release-notes/${VERSION}.md"
-          [ -f "${notes}" ] || notes="docs/release-notes/${VERSION%%-*}.md"
+          # A curated docs/release-notes/<tag>.md replaces the generated commit list when one
+          # exists (tags are the train label, e.g. v4.6.3.2 for an RTC-led train).
+          notes="docs/release-notes/${GITHUB_REF_NAME#v}.md"
 
           {
             if [ -f "${notes}" ]; then
@@ -121,12 +93,13 @@ jobs:
             fi
             echo "## Packages"
             echo
-            echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\` and io.agora.rtc:voice-rtc-basic \`${AGORA_VOICE_VERSION}\` (Maven Central)."
+            echo "Bound against io.agora.rtc:full-rtc-basic \`${AGORA_VIDEO_VERSION}\`, io.agora.rtc:voice-rtc-basic \`${AGORA_VOICE_VERSION}\` and io.agora:agora-rtm \`${AGORA_SIGNALING_VERSION}\` (Maven Central). Each package publishes at its own version line; a row whose version did not move since the previous train was skipped by the push, not republished."
             echo
             echo "| Package | NuGet |"
             echo "| --- | --- |"
-            echo "| \`Net.Agora.Video.Android\` | [${VERSION}](https://www.nuget.org/packages/Net.Agora.Video.Android/${VERSION}) |"
-            echo "| \`Net.Agora.Voice.Android\` | [${VERSION}](https://www.nuget.org/packages/Net.Agora.Voice.Android/${VERSION}) |"
+            echo "| \`Net.Agora.Video.Android\` | [${AGORA_VIDEO_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Video.Android/${AGORA_VIDEO_PACKAGE_VERSION}) |"
+            echo "| \`Net.Agora.Voice.Android\` | [${AGORA_VOICE_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Voice.Android/${AGORA_VOICE_PACKAGE_VERSION}) |"
+            echo "| \`Net.Agora.Signaling.Android\` | [${AGORA_SIGNALING_PACKAGE_VERSION}](https://www.nuget.org/packages/Net.Agora.Signaling.Android/${AGORA_SIGNALING_PACKAGE_VERSION}) |"
           } > release-notes.md
 
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
@@ -136,6 +109,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            --title "${VERSION}" \
-            --notes-file release-notes.md \
-            ${{ needs.version.outputs.prerelease == 'true' && '--prerelease' || '' }}
+            --title "${GITHUB_REF_NAME#v}" \
+            --notes-file release-notes.md
