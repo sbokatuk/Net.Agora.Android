@@ -127,12 +127,19 @@ AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 n
 
 ## Sample
 
-`samples/Net.Agora.Sample.Android` is a MAUI app built straight against this package — no
-cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview: an
-App ID entry, camera/microphone permission handling, and a `SurfaceView` behind a small MAUI
-handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrapped view). The
-full join/publish/subscribe flow, wrapped behind one cross-platform API, is
-[`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s sample.
+`samples/Net.Agora.Sample.Android` is a MAUI app built straight against the packages — no
+cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview
+with a front/back flip: an App ID entry, camera/microphone permission handling, and a
+`SurfaceView` behind a small MAUI handler (see its `AgoraVideoView.cs` for why a custom handler
+rather than a wrapped view). Its **Try Signaling** button drives `Agora.Rtm.RtmClient` from the
+same app — the coexistence of the two products, proven at dex-merge time just by building.
+
+`samples/Net.Agora.Sample.Voice.Android` is its audio-only sibling against
+`Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
+reports, with no camera permission anywhere.
+
+The full join/publish/subscribe flows, wrapped behind one cross-platform API, are
+[`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s samples.
 
 It consumes the packed `Net.Agora.Video.Android` package from `./artifacts` (see `NuGet.config`),
 so pack first. It targets `net10.0-android36.0` and needs the **.NET 10 SDK** with the

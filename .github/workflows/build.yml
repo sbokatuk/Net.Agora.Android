@@ -183,18 +183,23 @@ jobs:
       # The sample consumes the packed package exactly as a MAUI consumer would: it restores from
       # artifacts/ (see NuGet.config) and links against Agora.Rtc.RtcEngine directly, so it is the
       # only thing that checks the API is still usable the way the README documents.
-      - name: Build the sample against the packed packages
+      - name: Build the samples against the packed packages
         run: |
-          # The sample consumes the Video package, whose exact version comes from the pins plus
-          # the optional prerelease suffix — see build/pins.sh.
+          # Exact versions come from the pins plus the optional prerelease suffix — see
+          # build/pins.sh. The Video sample also consumes the Signaling package (the coexistence
+          # proof); the Voice sample is its own app, since the two RTC packages cannot share one.
           . ./build/pins.sh
-          version="${AGORA_VIDEO_PACKAGE_VERSION}${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}"
+          s="${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}"
           # From the same scratch directory the workload was installed into, for the same reason:
           # the SDK - and therefore the workload set - is resolved from the working directory.
           ( cd "${RUNNER_TEMP}/sample-sdk" \
             && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Android/Net.Agora.Sample.Android.csproj" \
                  --configuration Release \
-                 -p:AgoraVideoPackageVersion="${version}" )
+                 -p:AgoraVideoPackageVersion="${AGORA_VIDEO_PACKAGE_VERSION}${s}" \
+                 -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" \
+            && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Voice.Android/Net.Agora.Sample.Voice.Android.csproj" \
+                 --configuration Release \
+                 -p:AgoraVoicePackageVersion="${AGORA_VOICE_PACKAGE_VERSION}${s}" )
 
   e2e:
     name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }})

@@ -29,6 +29,13 @@
                     Text="Stop"
                     IsEnabled="False"
                     Clicked="OnStopClicked" />
+            <Button x:Name="FlipButton"
+                    Text="Flip"
+                    IsEnabled="False"
+                    Clicked="OnFlipClicked" />
+            <Button x:Name="SignalingButton"
+                    Text="Try Signaling"
+                    Clicked="OnSignalingClicked" />
         </HorizontalStackLayout>
 
         <!-- The SurfaceView Agora renders the local camera into - see AgoraVideoView.cs. -->
