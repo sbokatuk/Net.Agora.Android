@@ -150,6 +150,10 @@ same app — the coexistence of the two products, proven at dex-merge time just 
 `Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
 reports, with no camera permission anywhere.
 
+`samples/Net.Agora.Sample.Signaling.Android` drives `Agora.Rtm.RtmClient` on its own — a tiny chat
+room (log in, subscribe, publish, receive) written against the raw callback API, to show what the
+façade hides.
+
 The full join/publish/subscribe flows, wrapped behind one cross-platform API, are
 [`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s samples.
 
