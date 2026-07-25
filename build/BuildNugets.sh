@@ -114,12 +114,19 @@ fi
 
 mkdir -p "$OUTPUT"
 
-PASS1_DIR="$OUTPUT/.net9-pass"
-PASS2_DIR="$OUTPUT/.net10-pass"
-rm -rf "$PASS1_DIR" "$PASS2_DIR"
+# The two passes' scratch directories, deliberately *outside* artifacts/: NuGet folder sources
+# search subdirectories, so a pass directory under artifacts/ lets a restore resolve an unmerged
+# single-band package — net8/net9 from one pass or net10 from the other, never both — and fail
+# with NU1202. That is exactly how Fastboard's restore of the Whiteboard binding broke on a clean
+# CI feed: the two half-packages sat beside each other under artifacts/ and the wrong one won.
+# The façade's BuildNugets.sh has kept its pass dirs outside artifacts/ for this reason all along.
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+PASS1_DIR="$WORK/net9-pass"
+PASS2_DIR="$WORK/net10-pass"
 
-SDK10_DIR="$(mktemp -d)"
-trap 'rm -rf "$SDK10_DIR"' EXIT
+SDK10_DIR="$WORK/sdk10"
+mkdir -p "$SDK10_DIR"
 cat > "$SDK10_DIR/global.json" <<EOF
 { "sdk": { "version": "$PASS2_SDK", "rollForward": "latestFeature" } }
 EOF
@@ -131,6 +138,8 @@ for package in $PACKAGES; do
         echo "error: $project does not exist, but build/packages.tsv lists $package" >&2
         exit 1
     fi
+
+    rm -rf "$PASS1_DIR" "$PASS2_DIR"
 
     echo "==> packing Net.Agora.$package.Android ($PASS1_BAND band)"
     dotnet pack "$project" \
@@ -145,9 +154,10 @@ for package in $PACKAGES; do
         -p:AgoraSdkBand="$PASS2_BAND" \
         $VERSION_ARG \
         -o "$PASS2_DIR")
+
+    # Merge this package before the next is packed, so its complete all-target-framework form is in
+    # artifacts/ in time for an intra-repo dependency to resolve it — Fastboard depends on the
+    # Whiteboard binding, which packs earlier in build/packages.tsv.
+    echo "==> merging Net.Agora.$package.Android"
+    python3 "$ROOT/build/merge-packages.py" "$PASS1_DIR" "$PASS2_DIR" "$OUTPUT"
 done
-
-echo "==> merging target frameworks"
-python3 "$ROOT/build/merge-packages.py" "$PASS1_DIR" "$PASS2_DIR" "$OUTPUT"
-
-rm -rf "$PASS1_DIR" "$PASS2_DIR"
