@@ -16,9 +16,9 @@
       packaging changes while the native artifact stays put.
     -->
     <AgoraVideoVersion>4.6.3</AgoraVideoVersion>
-    <AgoraVideoBindingRevision>3</AgoraVideoBindingRevision>
+    <AgoraVideoBindingRevision>4</AgoraVideoBindingRevision>
     <AgoraVoiceVersion>4.6.3</AgoraVoiceVersion>
-    <AgoraVoiceBindingRevision>3</AgoraVoiceBindingRevision>
+    <AgoraVoiceBindingRevision>4</AgoraVoiceBindingRevision>
     <!--
       Signaling (RTM) is a different product with its own native version line — 2.2.x, nothing to
       do with the RTC 4.6.x line above. See build/BuildNugets.sh for how releases handle packages
