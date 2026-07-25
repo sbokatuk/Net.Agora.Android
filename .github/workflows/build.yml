@@ -216,7 +216,10 @@ jobs:
                  -p:AgoraVoicePackageVersion="${AGORA_VOICE_PACKAGE_VERSION}${s}" \
             && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.IoT.Android/Net.Agora.Sample.IoT.Android.csproj" \
                  --configuration Release \
-                 -p:AgoraIoTPackageVersion="${AGORA_IOT_PACKAGE_VERSION}${s}" )
+                 -p:AgoraIoTPackageVersion="${AGORA_IOT_PACKAGE_VERSION}${s}" \
+            && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Signaling.Android/Net.Agora.Sample.Signaling.Android.csproj" \
+                 --configuration Release \
+                 -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" )
 
   e2e:
     name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }})
