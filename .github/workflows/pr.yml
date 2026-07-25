@@ -78,4 +78,6 @@ jobs:
             echo "- [Net.Agora.Signaling.Android](https://www.nuget.org/packages/Net.Agora.Signaling.Android/${AGORA_SIGNALING_PACKAGE_VERSION}-${s})"
             echo "- [Net.Agora.Chat.Android](https://www.nuget.org/packages/Net.Agora.Chat.Android/${AGORA_CHAT_PACKAGE_VERSION}-${s})"
             echo "- [Net.Agora.IoT.Android](https://www.nuget.org/packages/Net.Agora.IoT.Android/${AGORA_IOT_PACKAGE_VERSION}-${s})"
+            echo "- [Net.Agora.Whiteboard.Android](https://www.nuget.org/packages/Net.Agora.Whiteboard.Android/${AGORA_WHITEBOARD_PACKAGE_VERSION}-${s})"
+            echo "- [Net.Agora.Fastboard.Android](https://www.nuget.org/packages/Net.Agora.Fastboard.Android/${AGORA_FASTBOARD_PACKAGE_VERSION}-${s})"
           } >> "$GITHUB_STEP_SUMMARY"

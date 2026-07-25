@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Whiteboard</AgoraPackageName>
+    <!--
+      com.github.netless-io:whiteboard-android is the Interactive Whiteboard SDK. Agora acquired
+      the product and documents it, but the source and the releases are netless-io's, published to
+      JitPack — which builds a GitHub tag on demand rather than hosting a release, so there is no
+      Maven Central coordinate to point at. Hence the Repository URL; see src/Agora.Binding.props.
+
+      It is a WebView SDK rather than a native one: the .aar carries no .so at all, only Java and
+      a JS bundle it loads into a WKWebView-equivalent. That is why it coexists with every other
+      package here — nothing to collide with.
+    -->
+    <AgoraGroupId>com.github.netless-io</AgoraGroupId>
+    <AgoraArtifact>whiteboard-android</AgoraArtifact>
+    <AgoraNativeVersion>$(AgoraWhiteboardVersion)</AgoraNativeVersion>
+    <AgoraMavenRepository>https://jitpack.io</AgoraMavenRepository>
+    <VersionPrefix>$(AgoraWhiteboardVersion).$(AgoraWhiteboardBindingRevision)</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <!--
+    Unlike every other product here, whiteboard-android has real third-party dependencies rather
+    than one Agora infra artifact — and Microsoft publishes bindings for all but one of them, so
+    they come in as ordinary PackageReferences rather than as embedded artifacts. That matters
+    beyond tidiness: embedding the raw .aars would put a second copy of okio, kotlin-stdlib and
+    androidx.core into any app that already has them, and duplicate classes fail the dex merge.
+
+    Square.OkHttp3 pulls in okio and the Kotlin runtime itself, which is why they are not listed
+    separately; Java dependency verification (XA4242) is what proves the set is complete.
+
+    The versions are not the newest published. Each of these lines dropped net8.0-android34.0 in
+    its most recent release, and this repository still ships net8 deliberately — so the pins are
+    the newest of each that still carries a net8 asset. They also carry net10 but no net9, which
+    NuGet resolves by falling back to net8 for the middle band.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Square.OkHttp3" Version="5.3.0" />
+    <PackageReference Include="GoogleGson" Version="2.13.2" />
+    <PackageReference Include="Xamarin.AndroidX.WebKit" Version="1.14.0.1" />
+    <PackageReference Include="Xamarin.AndroidX.Annotation" Version="1.9.1.5" />
+  </ItemGroup>
+
+  <!--
+    The exception: DSBridge-Android is netless's own fork of a JS-bridge library, published only to
+    JitPack under a tag rather than a version ("nl_dsb_v3.0.4"). No NuGet binding exists, so it
+    travels inside this package.
+
+    Bound rather than carried, unlike every other extra artifact in this repository. WhiteboardView
+    — the board itself, and the one type an app cannot avoid — extends
+    wendu.dsbridge.special.DWebView, so leaving DSBridge unbound makes class-parse drop the view
+    and every method that takes one, silently: the package still builds, and Agora.Whiteboard.
+    WhiteSdk arrives with no constructor. java-resolution-report.log is where that shows up.
+  -->
+  <ItemGroup>
+    <AgoraMavenArtifact Include="com.github.netless-io:DSBridge-Android"
+                        Version="nl_dsb_v3.0.4"
+                        Repository="https://jitpack.io"
+                        Bind="true" />
+  </ItemGroup>
+
+  <!--
+    The Java package is com.herewhite.sdk — netless's original company name, which the SDK never
+    renamed. Renamed to Agora.Whiteboard, matching how the other products here present themselves
+    and how Agora's own documentation names the product.
+  -->
+  <ItemGroup>
+    <AndroidNamespaceReplacement Include="Com.Herewhite.Sdk" Replacement="Agora.Whiteboard" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>.NET for Android / .NET MAUI bindings for the Agora Interactive Whiteboard Android SDK, generated from com.github.netless-io:whiteboard-android $(AgoraWhiteboardVersion) on JitPack. Lets a .NET app join a whiteboard room and draw on it. A WebView SDK, so it coexists with every other Net.Agora package.</Description>
+    <PackageTags>$(PackageTags);Whiteboard;drawing;collaboration</PackageTags>
+  </PropertyGroup>
+
+</Project>

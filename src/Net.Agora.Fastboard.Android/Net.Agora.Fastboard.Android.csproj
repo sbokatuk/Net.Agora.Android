@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AgoraPackageName>Fastboard</AgoraPackageName>
+    <!--
+      Fastboard is netless's ready-made UI over the Interactive Whiteboard: a board with a working
+      toolbar rather than a bare canvas. Published to JitPack alongside the whiteboard SDK it wraps
+      — see src/Agora.Binding.props for how a JitPack Repository is resolved.
+    -->
+    <AgoraGroupId>com.github.netless-io</AgoraGroupId>
+    <AgoraArtifact>fastboard-android</AgoraArtifact>
+    <AgoraNativeVersion>$(AgoraFastboardVersion)</AgoraNativeVersion>
+    <AgoraMavenRepository>https://jitpack.io</AgoraMavenRepository>
+    <VersionPrefix>$(AgoraFastboardVersion).$(AgoraFastboardBindingRevision)</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="../Agora.Binding.props" />
+
+  <!--
+    The whiteboard SDK itself, through this repository's own binding rather than as another
+    embedded artifact: Fastboard's public types take and return com.herewhite.sdk ones, so a
+    consumer needs them bound anyway, and a second copy of the .aar would fail the dex merge
+    against the one Net.Agora.Whiteboard.Android already carries.
+
+    Not pinned with brackets, unlike the facade's references. Java dependency verification parses
+    every PackageReference's version itself and rejects a range outright — "'[2.16.123.1]' is not a
+    valid version string" — so the exact pin would trade the .aar-completeness check for nothing.
+    The looser form costs little here: both packages are built and released together from this
+    repository, so a consumer resolving a newer whiteboard binding is resolving one that was
+    published in the same train.
+
+    But it must still carry the prerelease suffix during a beta pack. A suffixed BuildNugets.sh run
+    packs the whole train at <version>-beta.N.M, so a plain <version> minimum does not resolve to
+    the <version>-beta.N.M whiteboard package sitting next to this one in ./artifacts — which is
+    the NU1102 a beta run hits. This is the binding-repo equivalent of the facade .Maui packages'
+    dependency chaining; still unbracketed, because an unbracketed prerelease version parses fine
+    where a range does not.
+  -->
+  <PropertyGroup>
+    <AgoraWhiteboardDependencyVersion>$(AgoraWhiteboardVersion).$(AgoraWhiteboardBindingRevision)</AgoraWhiteboardDependencyVersion>
+    <AgoraWhiteboardDependencyVersion Condition=" '$(VersionSuffix)' != '' ">$(AgoraWhiteboardDependencyVersion)-$(VersionSuffix)</AgoraWhiteboardDependencyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Net.Agora.Whiteboard.Android" Version="$(AgoraWhiteboardDependencyVersion)" />
+  </ItemGroup>
+
+  <!--
+    Fastboard's own dependencies. As with the whiteboard binding these come in as Microsoft's
+    bindings rather than as embedded .aars, so an app that already has AppCompat gets one copy.
+
+    Not the newest of each line, though, unlike the whiteboard binding's. AppCompat 1.7.1 depends
+    on AndroidX Fragment 1.8.8, which requires Lifecycle.LiveData.Core 2.9.2 — and .NET MAUI 9 pins
+    Lifecycle.LiveData to 2.8.7, so any MAUI app referencing this package fails to restore with
+    NU1107. The 1.7.0 line stays inside MAUI's own AndroidX graph. Revisit when MAUI moves.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.7.0.7" />
+    <PackageReference Include="Xamarin.AndroidX.RecyclerView" Version="1.3.2.10" />
+    <PackageReference Include="Xamarin.Jetbrains.Annotations" Version="26.0.2.3" />
+    <PackageReference Include="GoogleGson" Version="2.13.2" />
+  </ItemGroup>
+
+  <!--
+    Java dependency verification cannot see that Net.Agora.Whiteboard.Android *is*
+    whiteboard-android: it recognises a Java artifact inside a NuGet only for packages that declare
+    one through the SDK's own metadata, which a hand-rolled binding does not. The .aar is genuinely
+    there — that package embeds it — so the dependency is satisfied in fact, and this says so
+    rather than adding a second copy that would fail the dex merge.
+  -->
+  <ItemGroup>
+    <AndroidIgnoredJavaDependency Include="com.github.netless-io:whiteboard-android:$(AgoraWhiteboardVersion)" />
+  </ItemGroup>
+
+  <!--
+    The Java package is io.agora.board.fast — Agora's own naming here, unlike the whiteboard SDK
+    underneath it, which netless still ships under com.herewhite.sdk. Renamed to Agora.Fastboard
+    for the same reason as every other product's rename.
+  -->
+  <ItemGroup>
+    <AndroidNamespaceReplacement Include="IO.Agora.Board.Fast" Replacement="Agora.Fastboard" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>.NET for Android / .NET MAUI bindings for Fastboard, netless's ready-made UI over the Agora Interactive Whiteboard (com.github.netless-io:fastboard-android $(AgoraFastboardVersion) on JitPack) — a board with a working toolbar rather than a bare canvas. Depends on Net.Agora.Whiteboard.Android, whose types its own API takes and returns.</Description>
+    <PackageTags>$(PackageTags);Fastboard;Whiteboard;drawing;collaboration</PackageTags>
+  </PropertyGroup>
+
+</Project>

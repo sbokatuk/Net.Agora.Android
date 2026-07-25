@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+  <!--
+    io.agora.board.fast.ui is Fastboard's own toolbar implementation — the button, layout and
+    RecyclerView.Adapter subclasses it assembles the control bar from. class-parse cannot generate
+    most of it: the adapters subclass RecyclerView.Adapter<VH> and lose the type argument to
+    erasure, so the generated classes never satisfy the abstract onBindViewHolder (CS0534), and the
+    layouts implement FastVisiable with covariant returns the generator cannot express (CS0535).
+
+    The whole package is removed rather than patched class by class. Nothing outside Fastboard
+    constructs these: an app adds a FastboardView, and the toolbar assembles itself. The one type
+    in there a consumer *does* touch is FastUiSettings, which configures the toolbar — it stays,
+    along with the enums and the drawable, because none of them has the problem.
+  -->
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ApplianceAdapter']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ColorAdapter']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolboxAdapter']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ErrorHandleLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ExtensionButton']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ExtensionLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='FastRoomController']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='LoadingLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='OverlayLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='RedoUndoLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='RoomControllerGroup']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ScenesLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolButton']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolLayout']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.ui']/class[@name='ToolboxLayout']" />
+
+  <!--
+    The replay surface — playback of a recorded session — is not bound.
+
+    Two reasons, and the second is the one that decides it.
+
+    It cannot stay as it is: FastReplayListener and FastRoomListener both declare onFastError and
+    both live in io.agora.board.fast, so the generator emits a FastErrorEventArgs partial for each
+    and the two merge into a single class carrying both sets of fields (CS0102). A rename would
+    fix that much — the Chat binding does exactly that for its chat-room listener.
+
+    But it should not stay at all: replay is playback of a recorded session, a separate feature
+    from drawing on a live board. Net.Agora.Fastboard does not expose it, and neither does this
+    repository's iOS counterpart — the shim in sbokatuk/Net.Agora.iOS's native/AgoraFastboardBridge
+    — so binding it on one platform only would be an asymmetry with nothing behind it. Renaming to
+    keep a surface no façade reaches would be the worse trade.
+
+    The classes stay in the .aar; what is removed is the managed view of them. Re-attempt this the
+    day replay is worth exposing, on both platforms.
+  -->
+  <remove-node path="/api/package[@name='io.agora.board.fast']/interface[@name='FastReplayListener']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast']/interface[@name='OnReplayReadyCallback']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast']/class[@name='FastReplay']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.internal']/class[@name='FastReplayContext']" />
+  <remove-node path="/api/package[@name='io.agora.board.fast.model']/class[@name='FastReplayOptions']" />
+</metadata>

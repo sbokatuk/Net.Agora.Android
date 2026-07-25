@@ -16,6 +16,11 @@ Signaling	-
 Chat	-
 # Android-only, and mutually exclusive with everything above it — see the project's .csproj.
 IoT	-
+# netless's, not Agora's own, and resolved from JitPack — see the project's .csproj.
+Whiteboard	-
+# netless's ready-made UI over the Whiteboard, from the same JitPack repository. Depends on the
+# Whiteboard row above, whose types its own API takes and returns.
+Fastboard	-
 # The optional RTC feature extensions: native payload only, no managed API, no dependency on
 # either RTC package. See src/Agora.Extension.md for why they are shaped that way, and for what
 # is deliberately absent (screen sharing, the -ll variants, LipSync).

@@ -7,7 +7,7 @@
 
 .NET for Android and .NET MAUI bindings for Agora's native Android SDKs.
 
-Five products are bound, from `net8.0-android` through `net10.0-android`:
+Seven products are bound, from `net8.0-android` through `net10.0-android`:
 
 | Package | Native artifact | Use it when |
 | --- | --- | --- |
@@ -15,6 +15,8 @@ Five products are bound, from `net8.0-android` through `net10.0-android`:
 | `Net.Agora.Voice.Android` | [`io.agora.rtc:voice-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/voice-rtc-basic) | Audio only — the same engine built without the video pipeline, a ~20 MB smaller `.aar`. |
 | `Net.Agora.Signaling.Android` | [`io.agora:agora-rtm`](https://central.sonatype.com/artifact/io.agora/agora-rtm) | Realtime messaging (Signaling / RTM 2.x, its own 2.2.x version line) — coexists with either RTC package. |
 | `Net.Agora.Chat.Android` | [`io.agora.rtc:chat-sdk`](https://central.sonatype.com/artifact/io.agora.rtc/chat-sdk) | Persistent messaging (Chat / IM 1.x, its own version line) — coexists with everything else here. |
+| `Net.Agora.Whiteboard.Android` | [`com.github.netless-io:whiteboard-android`](https://jitpack.io/#netless-io/whiteboard-android) | The Interactive Whiteboard (2.16.x). A WebView SDK from JitPack, not Maven Central — it carries no native code, so it coexists with everything else here. |
+| `Net.Agora.Fastboard.Android` | [`com.github.netless-io:fastboard-android`](https://jitpack.io/#netless-io/fastboard-android) | netless's ready-made UI over the whiteboard (1.8.x) — a board with a working toolbar rather than a bare canvas. Depends on the row above. |
 | `Net.Agora.IoT.Android` | [`io.agora:iotsdk`](https://central.sonatype.com/artifact/io.agora/iotsdk) | Agora IoT devices (1.3.x). **Android only** — there is no iOS SDK, so no cross-platform client — and **exclusive with every package above**, whose native artifacts it bundles its own copies of. |
 
 Alongside them, twelve `Net.Agora.Extensions.<Name>.Android` packages carry the RTC SDK's optional
