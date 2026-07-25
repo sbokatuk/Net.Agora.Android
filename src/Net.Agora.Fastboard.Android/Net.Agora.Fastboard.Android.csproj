@@ -28,9 +28,21 @@
     The looser form costs little here: both packages are built and released together from this
     repository, so a consumer resolving a newer whiteboard binding is resolving one that was
     published in the same train.
+
+    But it must still carry the prerelease suffix during a beta pack. A suffixed BuildNugets.sh run
+    packs the whole train at <version>-beta.N.M, so a plain <version> minimum does not resolve to
+    the <version>-beta.N.M whiteboard package sitting next to this one in ./artifacts — which is
+    the NU1102 a beta run hits. This is the binding-repo equivalent of the facade .Maui packages'
+    dependency chaining; still unbracketed, because an unbracketed prerelease version parses fine
+    where a range does not.
   -->
+  <PropertyGroup>
+    <AgoraWhiteboardDependencyVersion>$(AgoraWhiteboardVersion).$(AgoraWhiteboardBindingRevision)</AgoraWhiteboardDependencyVersion>
+    <AgoraWhiteboardDependencyVersion Condition=" '$(VersionSuffix)' != '' ">$(AgoraWhiteboardDependencyVersion)-$(VersionSuffix)</AgoraWhiteboardDependencyVersion>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Net.Agora.Whiteboard.Android" Version="$(AgoraWhiteboardVersion).$(AgoraWhiteboardBindingRevision)" />
+    <PackageReference Include="Net.Agora.Whiteboard.Android" Version="$(AgoraWhiteboardDependencyVersion)" />
   </ItemGroup>
 
   <!--
