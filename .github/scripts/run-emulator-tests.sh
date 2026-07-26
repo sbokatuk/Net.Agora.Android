@@ -70,10 +70,18 @@ done < "${REPO_ROOT}/build/packages.tsv"
 rm -rf "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/obj" \
        "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/bin"
 
-echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version})"
+# AGORA_SHRINK=1 turns Java shrinking (R8) on for this run, which validates the keep rules the
+# packages ship in buildTransitive/ — see the .csproj comment. Off by default: the plain legs
+# should keep meaning "the .aar is not in the app / the binding does not drive the SDK".
+SHRINK_ARGS=()
+if [ "${AGORA_SHRINK:-0}" = "1" ]; then
+    SHRINK_ARGS=(-p:AgoraShrinkTest=true)
+fi
+
+echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0})"
 # Debug, not Release. Release AOT-compiles every assembly, and an AOT image built against an
 # unlinked assembly set disagrees with what the runtime loads - the app aborts on startup before a
-# single check runs. Debug also skips the R8 shrinking this app has to avoid anyway - see the
+# single check runs. Debug also skips the R8 shrinking this app avoids by default - see the
 # comments in the .csproj.
 ( cd "${SDK_DIR}" && dotnet build "${PROJECT}" \
     --configuration Debug \
@@ -81,6 +89,7 @@ echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=$
     -p:AgoraDevicePackageVersion="${VERSION}" \
     -p:AgoraDeviceTargetFramework="${TARGET_FRAMEWORK}" \
     -p:RuntimeIdentifier="${DEVICE_RID}" \
+    ${SHRINK_ARGS[@]+"${SHRINK_ARGS[@]}"} \
     -t:Install )
 
 echo "==> granting camera/microphone permissions"

@@ -222,7 +222,7 @@ jobs:
                  -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" )
 
   e2e:
-    name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }})
+    name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }}${{ matrix.shrink == 1 && ', shrink' || '' }})
     timeout-minutes: 60
     needs: pack
     # Off on a scoped track release — the tag's commit was device-tested on its PR. See validate.
@@ -240,6 +240,15 @@ jobs:
         # and API surface.
         package: [Video, Voice]
         target-framework: ${{ fromJSON(inputs.e2e-target-frameworks) }}
+        shrink: [0]
+        include:
+          # One extra leg with Java shrinking (R8) on — the configuration a store build ships
+          # with. It exercises the auto-generated bound-surface keeps plus the packages' own
+          # rules end to end; the plain legs stay shrink-free so their failures keep meaning
+          # "payload missing / binding broken". See the DeviceTests csproj comment.
+          - package: Video
+            target-framework: net10.0-android36.0
+            shrink: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -322,13 +331,13 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
+          script: AGORA_SHRINK=${{ matrix.shrink }} ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
 
       - name: Upload emulator logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emulator-test-logs-${{ matrix.package }}-${{ matrix.target-framework }}
+          name: emulator-test-logs-${{ matrix.package }}-${{ matrix.target-framework }}${{ matrix.shrink == 1 && '-shrink' || '' }}
           path: emulator-tests.log
           if-no-files-found: ignore
           retention-days: 7

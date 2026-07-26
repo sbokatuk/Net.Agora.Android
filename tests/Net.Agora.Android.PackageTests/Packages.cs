@@ -147,6 +147,15 @@ public static class Packages
         Extensions.Select(e => new object[] { e.Id });
 
     /// <summary>
+    /// The packages that must ship their own R8 keep rules because their .aar carries no (or
+    /// only partial) proguard.txt — verified per artifact in each project's proguard.cfg header.
+    /// Video/Voice and the extensions are deliberately absent: Agora ships rules inside those
+    /// .aars and the Android build applies them on its own.
+    /// </summary>
+    public static IEnumerable<object[]> ProguardPackageIds =>
+        new[] { Signaling, Chat, IoT, Whiteboard, Fastboard }.Select(id => new object[] { id });
+
+    /// <summary>
     /// Target frameworks every package here must carry, one per SDK band pass. Pinned rather than
     /// discovered: a package that silently lost a target framework because a pack pass failed is
     /// exactly the regression these tests exist to catch.

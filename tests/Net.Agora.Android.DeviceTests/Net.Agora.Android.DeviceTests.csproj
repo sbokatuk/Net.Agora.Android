@@ -59,8 +59,17 @@
 
       A failure here should only ever mean "the .aar is not in the app" or "the binding does not
       drive the SDK", which are the two things this suite is meant to be able to say.
+
+      -p:AgoraShrinkTest=true is the deliberate exception: it turns Java shrinking back ON (and
+      only Java shrinking — managed trimming and AOT stay off) so one leg exercises the
+      configuration a store build actually ships with: R8 plus the auto-generated bound-surface
+      keeps plus whatever rules the package carries (in-aar proguard.txt for RTC, packed
+      proguard/ + buildTransitive/ for the products whose aars ship none — see
+      src/Agora.Proguard.targets). A regression in any of those layers surfaces here as the
+      Class.forName entry-point checks failing or the SDK dying at runtime.
     -->
-    <AndroidLinkTool></AndroidLinkTool>
+    <AndroidLinkTool Condition=" '$(AgoraShrinkTest)' != 'true' "></AndroidLinkTool>
+    <AndroidLinkTool Condition=" '$(AgoraShrinkTest)' == 'true' ">r8</AndroidLinkTool>
     <AndroidLinkMode>None</AndroidLinkMode>
     <RunAOTCompilation>false</RunAOTCompilation>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>

@@ -213,4 +213,22 @@
     <None Include="$(MSBuildThisFileDirectory)../LICENSE" Pack="true" PackagePath="licenses/" Visible="false" />
   </ItemGroup>
 
+  <!--
+    R8/ProGuard keep rules. A project that has a proguard.cfg gets it packed under proguard/ plus
+    the shared buildTransitive targets (renamed to <PackageId>.targets so NuGet auto-imports it
+    into consumers) that feeds it to the app's R8 run — see Agora.Proguard.targets for why the
+    bindings cannot rely on R8's own reachability analysis. Only the aars that ship no (or
+    partial) proguard.txt of their own need one: Signaling, Chat, Whiteboard, IoT, Fastboard.
+  -->
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/proguard.cfg')">
+    <!--
+      PackagePath is a directory on purpose: NuGet only honors a file-renaming PackagePath when
+      the source and target extensions match, and silently creates a directory named like the
+      file otherwise. The package id is already in the installed path, so the plain name loses
+      nothing.
+    -->
+    <None Include="$(MSBuildProjectDirectory)/proguard.cfg" Pack="true" PackagePath="proguard/" />
+    <None Include="$(MSBuildThisFileDirectory)Agora.Proguard.targets" Pack="true" PackagePath="buildTransitive/$(PackageId).targets" Visible="false" />
+  </ItemGroup>
+
 </Project>

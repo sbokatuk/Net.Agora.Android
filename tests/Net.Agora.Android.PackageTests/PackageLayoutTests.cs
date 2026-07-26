@@ -48,4 +48,21 @@ public class PackageLayoutTests
         // anything below means a placeholder.
         Assert.True(native!.Length > minAarBytes, $"'{native.FullName}' is only {native.Length} bytes; looks empty.");
     }
+
+    [Theory]
+    [MemberData(nameof(Packages.ProguardPackageIds), MemberType = typeof(Packages))]
+    public void Package_ships_r8_keep_rules_when_its_aar_has_none(string packageId)
+    {
+        using var package = Packages.OpenPackage(packageId);
+
+        // Both halves must travel together: the rules file, and the buildTransitive targets
+        // (named exactly <PackageId>.targets or NuGet never imports it) that feeds the rules to
+        // the consuming app's R8 run. See src/Agora.Proguard.targets for why the bindings cannot
+        // rely on R8's own reachability analysis.
+        using var rules = new StreamReader(Packages.ReadEntry(package, "proguard/proguard.cfg"));
+        Assert.Contains("-keep class", rules.ReadToEnd());
+
+        using var targets = new StreamReader(Packages.ReadEntry(package, $"buildTransitive/{packageId}.targets"));
+        Assert.Contains("ProguardConfiguration", targets.ReadToEnd());
+    }
 }
