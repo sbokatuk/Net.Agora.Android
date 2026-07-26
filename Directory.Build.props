@@ -16,16 +16,16 @@
       packaging changes while the native artifact stays put.
     -->
     <AgoraVideoVersion>4.6.3</AgoraVideoVersion>
-    <AgoraVideoBindingRevision>4</AgoraVideoBindingRevision>
+    <AgoraVideoBindingRevision>5</AgoraVideoBindingRevision>
     <AgoraVoiceVersion>4.6.3</AgoraVoiceVersion>
-    <AgoraVoiceBindingRevision>4</AgoraVoiceBindingRevision>
+    <AgoraVoiceBindingRevision>5</AgoraVoiceBindingRevision>
     <!--
       Signaling (RTM) is a different product with its own native version line — 2.2.x, nothing to
       do with the RTC 4.6.x line above. See build/BuildNugets.sh for how releases handle packages
       whose versions do not move together.
     -->
     <AgoraSignalingVersion>2.2.6</AgoraSignalingVersion>
-    <AgoraSignalingBindingRevision>1</AgoraSignalingBindingRevision>
+    <AgoraSignalingBindingRevision>2</AgoraSignalingBindingRevision>
     <!--
       Chat is a third product on a third native line — 1.4.x. It is the rebranded Easemob/Hyphenate
       IM SDK, which is why its Java classes carry EM-prefixed names in places and its iOS podspec
@@ -33,14 +33,14 @@
       Agora's own.
     -->
     <AgoraChatVersion>1.4.0</AgoraChatVersion>
-    <AgoraChatBindingRevision>1</AgoraChatBindingRevision>
+    <AgoraChatBindingRevision>2</AgoraChatBindingRevision>
     <!--
       IoT is a fourth product on a fourth line — 1.3.x. Android and Linux only; Agora ships no iOS
       SDK for it at all, which is why there is no Net.Agora.IoT.iOS and no cross-platform facade.
       See src/Net.Agora.IoT.Android for what else is unusual about it.
     -->
     <AgoraIoTVersion>1.3.0</AgoraIoTVersion>
-    <AgoraIoTBindingRevision>1</AgoraIoTBindingRevision>
+    <AgoraIoTBindingRevision>2</AgoraIoTBindingRevision>
     <!--
       Whiteboard and Fastboard are netless's, not Agora's own: Agora acquired the product and
       still documents it, but the source and the releases are netless-io's, published to JitPack
@@ -48,9 +48,9 @@
       and versions separately.
     -->
     <AgoraWhiteboardVersion>2.16.123</AgoraWhiteboardVersion>
-    <AgoraWhiteboardBindingRevision>1</AgoraWhiteboardBindingRevision>
+    <AgoraWhiteboardBindingRevision>2</AgoraWhiteboardBindingRevision>
     <AgoraFastboardVersion>1.8.1</AgoraFastboardVersion>
-    <AgoraFastboardBindingRevision>1</AgoraFastboardBindingRevision>
+    <AgoraFastboardBindingRevision>2</AgoraFastboardBindingRevision>
     <!--
       The default for projects that do not pick their own line (tests, and the Video binding
       itself); the Voice .csproj overrides this with its own pair.
