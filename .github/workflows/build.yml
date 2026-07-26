@@ -159,7 +159,11 @@ jobs:
 
   sample:
     name: build sample app
-    timeout-minutes: 30
+    # 60, not 30: the device-link step below AOT-compiles four MAUI heads, which is minutes each on
+    # top of the plain Release builds. The step lives in this job rather than its own because it
+    # reuses this one's MAUI workload install and downloaded packages — a dedicated job would pay for
+    # both again to run the same four projects.
+    timeout-minutes: 60
     needs: pack
     # Off on a scoped track release too — see the validate job.
     if: ${{ inputs.build-sample && inputs.track == '' }}
@@ -228,6 +232,82 @@ jobs:
                  --configuration Release \
                  -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" )
 
+      # What this proves that nothing else here does: that the packages survive being *linked for a
+      # device*. Every other check in this repository builds either without a RuntimeIdentifier (the
+      # step above, which stops at IL) or in Debug (the emulator legs, which deliberately turn
+      # trimming, AOT and R8 off so their failures can only mean "the payload is missing" — see the
+      # DeviceTests .csproj). A shipping app is none of those, and the steps a shipping app adds are
+      # exactly the ones that can drop a binding's types: the trimmer walks the managed graph, the
+      # AOT compiler bakes it, R8 walks the Java one, and the packager has to find a native library
+      # for the one ABI asked for. A regression in any of them is invisible until this step runs.
+      #
+      # Measured defaults for -c Release on a .NET 10 Android head, so the flags below are the ones
+      # that are genuinely not implied:
+      #   PublishTrimmed      true    (managed trimming: on)
+      #   RunAOTCompilation   true    (AOT: on)
+      #   AndroidLinkTool     ""      (Java shrinking: OFF — Release alone does not enable R8)
+      #   AndroidPackageFormat aab
+      # So AndroidLinkTool=r8 is passed explicitly: without it this step would say nothing about
+      # Java shrinking, and the packages' proguard rules would go on being exercised only by the one
+      # Signaling e2e leg. AndroidPackageFormat=apk likewise — an .aab is a multi-ABI container the
+      # store re-splits, and the artifact this check wants to insist on is the single-ABI, installable
+      # one that a device actually runs.
+      #
+      # No keystore is configured, so the APK is signed with the generated debug key: what is being
+      # asserted is that the packaging and signing pipeline ran to completion, not that the result is
+      # publishable.
+      #
+      # One sample per product that has one here. Chat, Whiteboard and Fastboard have no sample in
+      # this repository (theirs live in the facade repository), so for those three the Release+RID
+      # configuration is not covered — their device legs build in Debug like every other leg.
+      - name: Link the samples for a device in Release
+        run: |
+          . ./build/pins.sh
+          s="${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}"
+
+          # SignAndroidPackage rather than the default target: a plain build stops before packaging,
+          # and "it produced a signed package" is the assertion.
+          link() {
+            project="$1"
+            shift
+            dotnet build "${GITHUB_WORKSPACE}/samples/${project}/${project}.csproj" \
+              --configuration Release \
+              -t:SignAndroidPackage \
+              -p:RuntimeIdentifier=android-arm64 \
+              -p:AndroidPackageFormat=apk \
+              -p:AndroidLinkTool=r8 \
+              "$@"
+
+            # || true, because sourcing pins.sh turned pipefail on for this shell: with no bin/
+            # directory at all, find's own failure would abort the step before the message below
+            # could name what went wrong.
+            apk=$(find "${GITHUB_WORKSPACE}/samples/${project}/bin/Release" -name '*-Signed.apk' 2>/dev/null | head -1 || true)
+            if [ -z "${apk}" ]; then
+              echo "::error::${project} produced no signed APK"
+              exit 1
+            fi
+            echo "${project}: $(du -h "${apk}" | cut -f1) $(basename "${apk}")"
+
+            # Each AOT build leaves the better part of a gigabyte of intermediates behind, and this
+            # runner is already holding every packed .nupkg. Nothing later in the job reads them, so
+            # peak usage stays at one project rather than four. (Measured locally: the four projects
+            # come to ~3 GB of obj/.)
+            rm -rf "${GITHUB_WORKSPACE}/samples/${project}/obj" "${GITHUB_WORKSPACE}/samples/${project}/bin"
+          }
+
+          # From the same scratch directory as the step above, for the same reason: the SDK — and
+          # therefore the workload set — is resolved from the working directory.
+          cd "${RUNNER_TEMP}/sample-sdk"
+          link Net.Agora.Sample.Android \
+            -p:AgoraVideoPackageVersion="${AGORA_VIDEO_PACKAGE_VERSION}${s}" \
+            -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}"
+          link Net.Agora.Sample.Voice.Android \
+            -p:AgoraVoicePackageVersion="${AGORA_VOICE_PACKAGE_VERSION}${s}"
+          link Net.Agora.Sample.IoT.Android \
+            -p:AgoraIoTPackageVersion="${AGORA_IOT_PACKAGE_VERSION}${s}"
+          link Net.Agora.Sample.Signaling.Android \
+            -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}"
+
   e2e:
     name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }}${{ matrix.shrink == 1 && ', shrink' || '' }})
     timeout-minutes: 60
@@ -240,12 +320,21 @@ jobs:
       # "net8 only", "Voice only" and "all of them" point at very different causes.
       fail-fast: false
       matrix:
-        # One leg per RTC package: Video and Voice carry the same Java classes, so a single
-        # device test app holds exactly one of them — see tests/Net.Agora.Android.DeviceTests.
-        # Signaling rides the shrink include below rather than this axis: one plain Signaling leg
-        # would mostly repeat what its package tests and the façade repository's emulator suite
-        # already cover, but the shrink leg is where it earns its keep.
-        package: [Video, Voice]
+        # One leg per package, because one device test app holds exactly one product — see
+        # tests/Net.Agora.Android.DeviceTests for why (Video and Voice carry the same Java classes
+        # and genuinely cannot share an app; the rest could, but a shared app would let one
+        # product's failure hide behind another's payload).
+        #
+        # Chat, Whiteboard and Fastboard are on this axis rather than trusted to the facade
+        # repository's emulator suite: that suite runs against *published* packages, so it says
+        # nothing about the packages a pull request here is building. Each of the three has a
+        # payload the compiler cannot see — Chat's three .so files, the whiteboard's JavaScript
+        # bundle and its bound-not-carried DSBridge, Fastboard's merged toolbar resources — and
+        # these legs are where that gets checked on a device.
+        #
+        # Signaling rides the shrink include below rather than this axis: it is built and run there
+        # too, under stricter conditions, so a plain leg would only repeat it.
+        package: [Video, Voice, Chat, Whiteboard, Fastboard]
         target-framework: ${{ fromJSON(inputs.e2e-target-frameworks) }}
         shrink: [0]
         include:
@@ -330,6 +419,12 @@ jobs:
             Video) base="${AGORA_VIDEO_PACKAGE_VERSION}" ;;
             Voice) base="${AGORA_VOICE_PACKAGE_VERSION}" ;;
             Signaling) base="${AGORA_SIGNALING_PACKAGE_VERSION}" ;;
+            Chat) base="${AGORA_CHAT_PACKAGE_VERSION}" ;;
+            Whiteboard) base="${AGORA_WHITEBOARD_PACKAGE_VERSION}" ;;
+            Fastboard) base="${AGORA_FASTBOARD_PACKAGE_VERSION}" ;;
+            # Every product sits on its own native version line, so there is no single version to
+            # fall back to — an unmatched package here would silently install nothing.
+            *) echo "::error::no version mapping for package '${{ matrix.package }}'" ; exit 1 ;;
           esac
           echo "AGORA_E2E_VERSION=${base}${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}" >> "$GITHUB_ENV"
 

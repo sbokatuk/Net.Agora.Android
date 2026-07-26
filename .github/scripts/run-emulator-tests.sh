@@ -10,9 +10,14 @@ set -euo pipefail
 #
 # Usage: run-emulator-tests.sh VERSION [TARGET_FRAMEWORK] [PACKAGE]
 #
-# PACKAGE is the packages.tsv id — Video (default), Voice or Signaling. One run exercises one
-# package: the two RTC packages carry the same Java classes, so a single app cannot hold both,
-# and Signaling swaps in its own suite (see tests/Net.Agora.Android.DeviceTests).
+# PACKAGE is the packages.tsv id — Video (default), Voice, Signaling, Chat, Whiteboard or
+# Fastboard. One run exercises one package: the two RTC packages carry the same Java classes, so a
+# single app cannot hold both, and every product swaps in its own suite behind its own define (see
+# tests/Net.Agora.Android.DeviceTests). IoT is not a flavor — it bundles private copies of the RTC
+# and RTM SDKs and so shares an app with nothing.
+#
+# VERSION is that package's own version: the products sit on independent native version lines, so
+# there is no single number that spans them. See build/pins.sh.
 
 VERSION="${1:?a package version is required}"
 TARGET_FRAMEWORK="${2:-net10.0-android36.0}"

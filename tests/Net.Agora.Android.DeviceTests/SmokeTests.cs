@@ -1,8 +1,10 @@
-// The whole RTC suite is compiled out of the Signaling flavor rather than branched at runtime:
-// with only Net.Agora.Signaling.Android referenced, nothing under Agora.Rtc even resolves. The
-// Signaling flavor's suite is SignalingSmokeTests.cs, which defines the same SmokeTests class
-// under AGORA_SIGNALING so MainActivity needs no flavor awareness at all.
-#if !AGORA_SIGNALING
+// The whole RTC suite is compiled into the RTC flavors only, rather than branched at runtime: with
+// any other product's package referenced, nothing under Agora.Rtc even resolves. Every flavor
+// carries a file like this one declaring the same SmokeTests class behind its own define —
+// SignalingSmokeTests.cs, ChatSmokeTests.cs, WhiteboardSmokeTests.cs, FastboardSmokeTests.cs — so
+// MainActivity needs no flavor awareness at all. AGORA_RTC covers Video and Voice because those
+// two share this one suite; see the .csproj for why it is a positive define.
+#if AGORA_RTC
 using Agora.Rtc;
 #endif
 
@@ -11,7 +13,7 @@ namespace Net.Agora.Android.DeviceTests;
 /// <summary>A single on-device check. Throws to fail.</summary>
 public sealed record SmokeTest(string Name, Action Execute);
 
-#if !AGORA_SIGNALING
+#if AGORA_RTC
 /// <summary>
 /// End-to-end checks that only mean anything on a real device or emulator: they load the native
 /// Agora engine out of the packaged .aar files and drive the raw binding —
