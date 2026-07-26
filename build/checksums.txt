@@ -1,0 +1,44 @@
+# SHA-256 of every native artifact this repository binds, keyed by
+# <groupId>:<artifactId>:<version>. Verified by build/verify-artifacts.sh, which downloads each
+# coordinate from the repository the binding resolves it from and compares.
+#
+# Why the bytes are pinned and not just the version: a Maven coordinate is a mutable pointer. A
+# re-published artifact keeps its version, and AndroidMavenLibrary performs no content check of
+# its own — what the .NET Android SDK calls Java dependency verification is a class-graph
+# completeness check (XA4241/XA4242), not a digest. Agora publishes no checksum manifest of its
+# own to defer to.
+#
+# The com.github.netless-io artifacts need this most: JitPack builds them on demand from a git
+# tag, and netless has re-tagged before, so the same coordinate can serve different bytes.
+# DSBridge-Android's "version" is literally a tag name (nl_dsb_v3.0.4) and it is bound
+# (Bind=true), so a moved tag would change the generated public API — see the Whiteboard csproj.
+#
+# After bumping a version in Directory.Build.props, refresh the line with:
+#
+#   ./build/verify-artifacts.sh --print
+#
+# and check the new hash against what the artifact should be before committing it — recording
+# whatever was served defeats the point if you have not looked at why it changed.
+#
+# <groupId>:<artifactId>:<version>  <sha256>
+com.github.netless-io:DSBridge-Android:nl_dsb_v3.0.4  fcd75ca02c2b105356e33b10dce62088babee8cfd9e119ddd6c02a26706b9d8b
+com.github.netless-io:fastboard-android:1.8.1  0554b62a1dc22844eff8bb6f2ca935f039ea8489a5d0dd2f4dfcd6d8cb2277f6
+com.github.netless-io:whiteboard-android:2.16.123  46d6210cf0411ffa1788b24e850466a8b0e2b7a564c90b2294e991a198e3518b
+io.agora.infra:aosl:1.3.5  e20092a5c28bbe72e3350dc6b1740979f624294d4de26139329a928a0df53f26
+io.agora.rtc:aiaec:4.6.3  40a9c8524935bd6d7e18de7dde52a9ae59d6a7172b875bcebf85b52b971edfb8
+io.agora.rtc:ains:4.6.3  25c06b355a2ae356a19e565a4e267b5f815edd20a2a8c068542ba5ecbb006fd5
+io.agora.rtc:audio-beauty:4.6.3  9f7c39d0e56a04342e6cfeb9f5950b4b40a4183690744f3386ea269f920cfc9f
+io.agora.rtc:chat-sdk:1.4.0  092c3b4f218fb8906ed98de98339d73697792040998ffbdc505f651c474bc10c
+io.agora.rtc:clear-vision:4.6.3  3f664732955cb01c228526db5ca99c18af3a5f6f5dfb048fc715824fce9c8889
+io.agora.rtc:full-content-inspect:4.6.3  e2a77ee8cc0cc76c7780d54f1dcff5ef520e10056d57769f4420f0d5db526d3a
+io.agora.rtc:full-face-capture:4.6.3  1b18d134ba70a79229b3a2a0681bea0c8267ad1c4fd56c50acdad34556c46e46
+io.agora.rtc:full-face-detect:4.6.3  3a4064b69f07412bcf61d06f7da9fc14c528e52f9a2e360ffafc5cb5deabcafc
+io.agora.rtc:full-rtc-basic:4.6.3  d062fab9568f3448e54ede53311a38d79b5fefbb2d182a68da13112181116b1b
+io.agora.rtc:full-video-av1-codec-enc:4.6.3  b34bdf7dcbb1bb71f8231b14b0c92de799719ea2e3ba83030841cdaa9d886cd2
+io.agora.rtc:full-video-codec-enc:4.6.3  1c98bb7ad00a3bde3580a8b17da15803ed720b5ca41910c56d32a4e1bd273b21
+io.agora.rtc:full-virtual-background:4.6.3  4e7264ae6db2c42b3d68c8da641f090f9980015122db0abc9ccd47e75b900c27
+io.agora.rtc:full-vqa:4.6.3  ca396c1238cd7428901b5ab6a648b7850c2db0b29adf4f350d682d07d410ad4b
+io.agora.rtc:spatial-audio:4.6.3  59d38b2a151717e165d1a7e9473632693d6a4fafe03acee384f968d84dce99fe
+io.agora.rtc:voice-rtc-basic:4.6.3  00164461acf0442c92718da4b8a4ddb6662677aac0cd20a157c35da1d39e5f70
+io.agora:agora-rtm:2.2.6  26b66e413000c7595eb1a5f2fadb44048e811b86006c5af740b9210d82a4112d
+io.agora:iotsdk:1.3.0  51da0a6f4587b9f7f5fde446adca17ae0ab71323cd9ae35afde374793540d188

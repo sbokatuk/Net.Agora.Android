@@ -46,12 +46,12 @@ public partial class MainPage : ContentPage
         // RtcEngineConfig binds each of its Java fields (mAppId, mContext, ...) twice: once as
         // the plain field (MAppId, settable) and once through a same-named read-only getter.
         // Only the M-prefixed field form has a setter. Any Context serves — no camera surface
-        // here, unlike the Video sample.
+        // here, unlike the Video sample. No MEventHandler: the binding's C# events below install
+        // their own handler through AddHandler, and create() itself only requires the context.
         var config = new RtcEngineConfig
         {
             MContext = global::Android.App.Application.Context,
             MAppId = appId,
-            MEventHandler = new EngineHandler(this),
         };
 
         var engine = RtcEngine.Create(config);
@@ -60,6 +60,14 @@ public partial class MainPage : ContentPage
             Append("RtcEngine.Create returned null");
             return;
         }
+
+        // The binding's C# events replace the IRtcEngineEventHandler subclass this sample used
+        // to carry. The SDK raises them on its own thread, so the volume label hops to the main
+        // thread explicitly (Append does its own hop).
+        engine.Error += (_, error) =>
+            Append($"error {error.Code}: {RtcEngine.GetErrorDescription(error.Code)}");
+        engine.AudioVolumeIndication += (_, volume) => MainThread.BeginInvokeOnMainThread(() =>
+            VolumeLabel.Text = $"local volume {volume.Speakers?.FirstOrDefault()?.Volume ?? 0} (total {volume.TotalVolume})");
 
         // Raw surface: every call answers an Agora error code, 0 for success — the façade hides
         // this. EnableAudio spins the capture pipeline up; the volume indication cadence drives
@@ -131,21 +139,5 @@ public partial class MainPage : ContentPage
         {
             StopEngine();
         }
-    }
-
-    /// <summary>
-    /// Translates <c>IRtcEngineEventHandler</c>'s callbacks — a Java abstract class overridden
-    /// per-instance, not a .NET event — into UI updates. The SDK raises these on its own thread,
-    /// so everything hops back to the main thread.
-    /// </summary>
-    private sealed class EngineHandler(MainPage owner) : IRtcEngineEventHandler
-    {
-        public override void OnAudioVolumeIndication(
-            IRtcEngineEventHandler.AudioVolumeInfo[]? speakers, int totalVolume) =>
-            MainThread.BeginInvokeOnMainThread(() =>
-                owner.VolumeLabel.Text = $"local volume {speakers?.FirstOrDefault()?.Volume ?? 0} (total {totalVolume})");
-
-        public override void OnError(int err) =>
-            owner.Append($"error {err}: {RtcEngine.GetErrorDescription(err)}");
     }
 }

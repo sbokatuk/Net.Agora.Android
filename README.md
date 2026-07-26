@@ -114,27 +114,41 @@ trap above, which builds with 0 errors and 0 warnings.
   channel lifecycle entry points. A binding that failed to generate still packs cleanly; these are
   what notice.
 - **`tests/Net.Agora.Android.DeviceTests`** is a bare Android app (no MAUI, no test framework)
-  that consumes the packed package and drives the raw binding on an emulator: resolve the Java
-  entry points out of the packaged `.aar`, read the native SDK version, create the engine,
-  enable/disable video and audio, run the local camera preview, destroy the engine. No Agora
-  credentials are involved — the App ID is syntactically valid but unregistered, which is enough
-  for everything short of joining a channel. It reports a single `AGORA_E2E_DONE PASS`/`FAIL`
-  line to logcat, which `.github/scripts/run-emulator-tests.sh` turns into an exit code — the same
-  marker the [`Net.Agora`](https://github.com/sbokatuk/Net.Agora) façade's own device tests use.
+  that consumes the packed package and drives the raw binding on an emulator. One app holds one
+  product, chosen with `-p:AgoraDevicePackage=`, and each product has its own suite behind its own
+  define — six of them: **Video**/**Voice** create the engine, enable and disable video and audio
+  and run the local camera preview; **Signaling** creates the client and drives the async adapters'
+  fault path; **Chat** checks its three `.so` files are in the app, initialises the SDK and has a
+  send refused through the SDK's own callback; **Whiteboard** checks the JavaScript bundle shipped
+  as an asset, that `WhiteboardView` really extends DSBridge's `DWebView`, and builds the SDK
+  against a live board view on the UI thread; **Fastboard** checks all three of its `.aar`s and its
+  merged toolbar resources, then inflates the board and reaches the whiteboard view through it. No
+  Agora credentials are involved anywhere — identifiers are syntactically valid but unregistered,
+  which is enough for everything short of joining, and every wait is bounded. Each run reports a
+  single `AGORA_E2E_DONE PASS`/`FAIL` line to logcat, which
+  `.github/scripts/run-emulator-tests.sh` turns into an exit code — the same marker the
+  [`Net.Agora`](https://github.com/sbokatuk/Net.Agora) façade's own device tests use.
 
 In CI (`.github/workflows/build.yml`) the `validate` job runs the package tests and the `e2e` job
-runs the emulator suite per package (Video and Voice — one leg each, since a single app can hold
-only one of them) on `net8.0-android34.0` and `net10.0-android36.0` — the two extremes: net8's
-`.aar` arrives through the `DownloadFile` fallback, and net10's assets are grafted in by the merge
-step, so those are the two that could each break alone. The Voice legs compile the video checks
-out (see the `AGORA_VOICE` constant in the device tests).
+runs the emulator suite per package — Video, Voice, Chat, Whiteboard and Fastboard, one leg each
+since a single app can hold only one — on `net8.0-android34.0` and `net10.0-android36.0`, the two
+extremes: net8's `.aar` arrives through the `DownloadFile` fallback, and net10's assets are grafted
+in by the merge step, so those are the two that could each break alone. Signaling gets one leg of
+its own with Java shrinking (R8) turned on, which is where the keep rules the packages ship in
+`buildTransitive/` are exercised. The `sample` job additionally links every sample that exists here
+for `android-arm64` in Release — trimmed, AOT-compiled, R8-shrunk and packaged into a signed APK —
+which is the only check in the repository that covers the configuration a shipping app is built in.
 
-Run the emulator suite locally, with an emulator already booted:
+Run the emulator suite locally, with an emulator already booted. Each product has its own version
+line, so pass its own (`build/pins.sh` resolves them):
 
 ```sh
 ./build/BuildNugets.sh
-AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 net9.0-android35.0
-AGORA_DEVICE_RID=android-arm64 ./.github/scripts/run-emulator-tests.sh 4.6.3.1 net9.0-android35.0 Voice
+. ./build/pins.sh
+export AGORA_DEVICE_RID=android-arm64          # an arm64 emulator, e.g. on Apple silicon
+./.github/scripts/run-emulator-tests.sh "$AGORA_VIDEO_PACKAGE_VERSION" net9.0-android35.0
+./.github/scripts/run-emulator-tests.sh "$AGORA_VOICE_PACKAGE_VERSION" net9.0-android35.0 Voice
+./.github/scripts/run-emulator-tests.sh "$AGORA_CHAT_PACKAGE_VERSION" net10.0-android36.0 Chat
 ```
 
 ## Sample

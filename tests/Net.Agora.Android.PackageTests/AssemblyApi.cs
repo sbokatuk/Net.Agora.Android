@@ -47,6 +47,75 @@ public sealed class AssemblyApi : IDisposable
             .ToList();
     }
 
+    public IReadOnlyList<string> EventsOf(string typeFullName)
+    {
+        var type = FindType(typeFullName);
+        return type.GetEvents()
+            .Select(_metadata.GetEventDefinition)
+            .Select(e => _metadata.GetString(e.Name))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Every public method of a type with its return type's full name — enough to assert that
+    /// an adapter really returns <c>System.Threading.Tasks.Task</c> rather than merely existing
+    /// under the right name.
+    /// </summary>
+    public IReadOnlyList<(string Name, string ReturnType)> MethodSignaturesOf(string typeFullName)
+    {
+        var type = FindType(typeFullName);
+        return type.GetMethods()
+            .Select(_metadata.GetMethodDefinition)
+            .Where(method => (method.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public)
+            .Select(method => (
+                _metadata.GetString(method.Name),
+                method.DecodeSignature(NameOnlySignatureProvider.Instance, genericContext: null).ReturnType))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Renders signature types as plain full names. Only as complete as these tests need:
+    /// definitions and references (which is where Task, string and the binding's own types all
+    /// land) come back namespace-qualified, everything exotic comes back as a placeholder that
+    /// simply won't equal any expected name.
+    /// </summary>
+    private sealed class NameOnlySignatureProvider : ISignatureTypeProvider<string, object?>
+    {
+        public static readonly NameOnlySignatureProvider Instance = new();
+
+        public string GetPrimitiveType(PrimitiveTypeCode typeCode) => $"System.{typeCode}";
+
+        public string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+        {
+            var type = reader.GetTypeDefinition(handle);
+            var ns = reader.GetString(type.Namespace);
+            var name = reader.GetString(type.Name);
+            return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+        }
+
+        public string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+        {
+            var type = reader.GetTypeReference(handle);
+            var ns = reader.GetString(type.Namespace);
+            var name = reader.GetString(type.Name);
+            return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+        }
+
+        public string GetSZArrayType(string elementType) => $"{elementType}[]";
+        public string GetArrayType(string elementType, ArrayShape shape) => $"{elementType}[…]";
+        public string GetByReferenceType(string elementType) => $"{elementType}&";
+        public string GetPointerType(string elementType) => $"{elementType}*";
+        public string GetGenericInstantiation(string genericType, System.Collections.Immutable.ImmutableArray<string> typeArguments) =>
+            $"{genericType}<{string.Join(", ", typeArguments)}>";
+        public string GetGenericMethodParameter(object? genericContext, int index) => $"!!{index}";
+        public string GetGenericTypeParameter(object? genericContext, int index) => $"!{index}";
+        public string GetModifiedType(string modifier, string unmodifiedType, bool isRequired) => unmodifiedType;
+        public string GetPinnedType(string elementType) => elementType;
+        public string GetFunctionPointerType(MethodSignature<string> signature) => "fnptr";
+        public string GetTypeFromSpecification(MetadataReader reader, object? genericContext, TypeSpecificationHandle handle, byte rawTypeKind) =>
+            reader.GetTypeSpecification(handle).DecodeSignature(this, genericContext);
+    }
+
     private TypeDefinition FindType(string typeFullName)
     {
         foreach (var handle in _metadata.TypeDefinitions)

@@ -48,4 +48,37 @@ public class PackageLayoutTests
         // anything below means a placeholder.
         Assert.True(native!.Length > minAarBytes, $"'{native.FullName}' is only {native.Length} bytes; looks empty.");
     }
+
+    [Theory]
+    [MemberData(nameof(Packages.NativePayloadPackageFrameworks), MemberType = typeof(Packages))]
+    public void Package_does_not_ship_the_native_payload_twice(string packageId, string tfm)
+    {
+        using var package = Packages.OpenPackage(packageId);
+
+        // Every non-application project produces its own <PackageId>.aar and the SDK packs it
+        // beside the artifacts. For these packages the SDK fills it with the jni/*.so set lifted
+        // out of a companion artifact in the same folder — up to 12 MB duplicated per target
+        // framework, and a duplicate-library (XA4301) warning in the consuming app. Suppressed by
+        // AgoraRemoveDuplicateProjectAar; asserted here because the waste is invisible in a build
+        // log. The packages whose project .aar carries real content (the ProGuard rules) are not
+        // on this axis — see Packages.NativePayloadPackages.
+        Assert.Null(package.GetEntry($"lib/{tfm}/{packageId}.aar"));
+    }
+
+    [Theory]
+    [MemberData(nameof(Packages.ProguardPackageIds), MemberType = typeof(Packages))]
+    public void Package_ships_r8_keep_rules_when_its_aar_has_none(string packageId)
+    {
+        using var package = Packages.OpenPackage(packageId);
+
+        // Both halves must travel together: the rules file, and the buildTransitive targets
+        // (named exactly <PackageId>.targets or NuGet never imports it) that feeds the rules to
+        // the consuming app's R8 run. See src/Agora.Proguard.targets for why the bindings cannot
+        // rely on R8's own reachability analysis.
+        using var rules = new StreamReader(Packages.ReadEntry(package, "proguard/proguard.cfg"));
+        Assert.Contains("-keep class", rules.ReadToEnd());
+
+        using var targets = new StreamReader(Packages.ReadEntry(package, $"buildTransitive/{packageId}.targets"));
+        Assert.Contains("ProguardConfiguration", targets.ReadToEnd());
+    }
 }

@@ -1,0 +1,29 @@
+<Project>
+
+  <!--
+    Imported into the CONSUMING app from buildTransitive/<PackageId>.targets. Feeds the keep
+    rules packed under proguard/ to R8 when the app builds with Java shrinking on
+    (AndroidLinkTool=r8).
+
+    What this protects, precisely: the .NET Android build already auto-generates keep rules for
+    every *bound* type and member (obj/.../proguard/proguard_project_references.cfg — verified
+    against this package: the full bound surface survives R8 with no help from us). What it
+    cannot cover is classes the binding deliberately does not bind — Transforms/Metadata.xml
+    removals such as IoT's bundled private RTC/RTM copies, or DSBridge helpers invoked by name
+    from JavaScript — when the native/JS side reaches them reflectively, where R8 sees no
+    reference. Agora ships exactly these blanket keeps inside its RTC .aars; this carries the
+    same practice to the products whose .aars ship none (Signaling, Chat, Whiteboard, IoT) or
+    partial rules (Fastboard).
+
+    The include path keys off this file's packaged location (buildTransitive/ next to
+    proguard/), so the same shared targets file serves every package that packs rules.
+
+    The function call is deliberately unquoted in the condition: wrapping it in single quotes
+    nests quotes ('$(TargetFramework)' inside '…') and MSBuild's condition parser rejects that
+    with MSB4092 — in the consuming project, which is the worst place to fail.
+  -->
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <ProguardConfiguration Include="$(MSBuildThisFileDirectory)../proguard/proguard.cfg" />
+  </ItemGroup>
+
+</Project>

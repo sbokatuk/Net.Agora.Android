@@ -147,6 +147,26 @@ public static class Packages
         Extensions.Select(e => new object[] { e.Id });
 
     /// <summary>
+    /// The packages that must ship their own R8 keep rules because their .aar carries no (or
+    /// only partial) proguard.txt — verified per artifact in each project's proguard.cfg header.
+    /// Video/Voice and the extensions are deliberately absent: Agora ships rules inside those
+    /// .aars and the Android build applies them on its own.
+    /// </summary>
+    /// <summary>
+    /// The packages whose own project .aar would only repeat a native payload the package
+    /// already carries: the two RTC bindings (their .aar holds nothing but the aosl artifact's
+    /// libaosl.so) and the twelve extensions (theirs holds the extension's own .so set). The
+    /// remaining bindings are absent deliberately — their project .aar carries the ProGuard
+    /// rules, which is real content.
+    /// </summary>
+    public static IEnumerable<object[]> NativePayloadPackageFrameworks =>
+        new[] { Video, Voice }.Concat(Extensions.Select(e => e.Id))
+            .SelectMany(id => TargetFrameworks.Select(tfm => new object[] { id, tfm }));
+
+    public static IEnumerable<object[]> ProguardPackageIds =>
+        new[] { Signaling, Chat, IoT, Whiteboard, Fastboard }.Select(id => new object[] { id });
+
+    /// <summary>
     /// Target frameworks every package here must carry, one per SDK band pass. Pinned rather than
     /// discovered: a package that silently lost a target framework because a pack pass failed is
     /// exactly the regression these tests exist to catch.
@@ -173,6 +193,10 @@ public static class Packages
     public static IEnumerable<object[]> RtcPackageFrameworks =>
         All.Where(p => p.LegacyPrefix == "IO.Agora.Rtc2")
             .SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm }));
+
+    /// <summary>The Signaling package only — the axis of the RTM additions checks.</summary>
+    public static IEnumerable<object[]> SignalingPackageFrameworks =>
+        TargetFrameworks.Select(tfm => new object[] { Signaling, tfm });
 
     public static (string Id, string AarPrefix, long MinAarBytes, long MinAssemblyBytes, string[] CoreTypes, string LegacyPrefix, int MinPublicTypes) Row(string packageId) =>
         All.Single(p => p.Id == packageId);

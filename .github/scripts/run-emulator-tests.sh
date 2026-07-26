@@ -10,8 +10,14 @@ set -euo pipefail
 #
 # Usage: run-emulator-tests.sh VERSION [TARGET_FRAMEWORK] [PACKAGE]
 #
-# PACKAGE is the packages.tsv id — Video (default) or Voice. One run exercises one package: the
-# two carry the same Java classes, so a single app cannot hold both.
+# PACKAGE is the packages.tsv id — Video (default), Voice, Signaling, Chat, Whiteboard or
+# Fastboard. One run exercises one package: the two RTC packages carry the same Java classes, so a
+# single app cannot hold both, and every product swaps in its own suite behind its own define (see
+# tests/Net.Agora.Android.DeviceTests). IoT is not a flavor — it bundles private copies of the RTC
+# and RTM SDKs and so shares an app with nothing.
+#
+# VERSION is that package's own version: the products sit on independent native version lines, so
+# there is no single number that spans them. See build/pins.sh.
 
 VERSION="${1:?a package version is required}"
 TARGET_FRAMEWORK="${2:-net10.0-android36.0}"
@@ -70,10 +76,18 @@ done < "${REPO_ROOT}/build/packages.tsv"
 rm -rf "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/obj" \
        "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/bin"
 
-echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version})"
+# AGORA_SHRINK=1 turns Java shrinking (R8) on for this run, which validates the keep rules the
+# packages ship in buildTransitive/ — see the .csproj comment. Off by default: the plain legs
+# should keep meaning "the .aar is not in the app / the binding does not drive the SDK".
+SHRINK_ARGS=()
+if [ "${AGORA_SHRINK:-0}" = "1" ]; then
+    SHRINK_ARGS=(-p:AgoraShrinkTest=true)
+fi
+
+echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0})"
 # Debug, not Release. Release AOT-compiles every assembly, and an AOT image built against an
 # unlinked assembly set disagrees with what the runtime loads - the app aborts on startup before a
-# single check runs. Debug also skips the R8 shrinking this app has to avoid anyway - see the
+# single check runs. Debug also skips the R8 shrinking this app avoids by default - see the
 # comments in the .csproj.
 ( cd "${SDK_DIR}" && dotnet build "${PROJECT}" \
     --configuration Debug \
@@ -81,6 +95,7 @@ echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=$
     -p:AgoraDevicePackageVersion="${VERSION}" \
     -p:AgoraDeviceTargetFramework="${TARGET_FRAMEWORK}" \
     -p:RuntimeIdentifier="${DEVICE_RID}" \
+    ${SHRINK_ARGS[@]+"${SHRINK_ARGS[@]}"} \
     -t:Install )
 
 echo "==> granting camera/microphone permissions"

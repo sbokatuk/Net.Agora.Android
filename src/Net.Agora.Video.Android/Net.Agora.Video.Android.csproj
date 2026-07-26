@@ -12,6 +12,12 @@
     <AgoraGroupId>io.agora.rtc</AgoraGroupId>
     <AgoraArtifact>full-rtc-basic</AgoraArtifact>
     <AgoraNativeVersion>$(AgoraVideoVersion)</AgoraNativeVersion>
+    <!--
+      This project's own .aar holds nothing but a second copy of the aosl artifact's
+      jni/libaosl.so — see AgoraRemoveDuplicateProjectAar in Agora.Binding.props. Dropping it
+      from the package is also what clears XA4301 (duplicate libaosl.so) in a consuming app.
+    -->
+    <AgoraDropProjectAar>true</AgoraDropProjectAar>
   </PropertyGroup>
 
   <Import Project="../Agora.Binding.props" />
@@ -33,6 +39,16 @@
   -->
   <ItemGroup>
     <AndroidNamespaceReplacement Include="IO.Agora.Rtc2" Replacement="Agora.Rtc" />
+  </ItemGroup>
+
+  <!--
+    Hand-written C# events over the generated partial RtcEngine. One shared file, mirrored into
+    this project AND Net.Agora.Voice.Android the same way: both bind the identical io.agora.rtc2
+    API layer into the same Agora.Rtc namespace, and the packages are mutually exclusive in one
+    app, so the additions must exist identically in each and can never collide.
+  -->
+  <ItemGroup>
+    <Compile Include="../shared/Agora.Rtc.RtcEngineEvents.cs" Link="Additions/RtcEngineEvents.cs" />
   </ItemGroup>
 
   <PropertyGroup>

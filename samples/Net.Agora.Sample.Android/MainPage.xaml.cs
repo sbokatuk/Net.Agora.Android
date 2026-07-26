@@ -53,12 +53,12 @@ public partial class MainPage : ContentPage
         // the plain field (MAppId, settable) and once through a same-named read-only getter. Only
         // the M-prefixed field form has a setter. The current Activity rather than the
         // application Context: the engine itself does not require one, but the camera preview
-        // surface generally does.
+        // surface generally does. No MEventHandler: the binding's C# events below install their
+        // own handler through AddHandler, and create() itself only requires the context.
         var config = new RtcEngineConfig
         {
             MContext = Platform.CurrentActivity ?? global::Android.App.Application.Context,
             MAppId = appId,
-            MEventHandler = new EngineHandler(this),
         };
 
         var engine = RtcEngine.Create(config);
@@ -67,6 +67,11 @@ public partial class MainPage : ContentPage
             Append("RtcEngine.Create returned null");
             return;
         }
+
+        // The binding's C# event replaces the IRtcEngineEventHandler subclass this sample used
+        // to carry. The SDK raises it on its own thread; Append hops to the main thread itself.
+        engine.Error += (_, error) =>
+            Append($"error {error.Code}: {RtcEngine.GetErrorDescription(error.Code)}");
 
         // The handler's platform view is the SurfaceView itself, which is exactly what
         // VideoCanvas wants — see AgoraVideoView.cs. The handler exists by now: this runs from a
@@ -88,7 +93,7 @@ public partial class MainPage : ContentPage
         Append(code == 0 ? "camera switched" : $"switchCamera returned {code}");
     }
 
-    private void OnSignalingClicked(object sender, EventArgs e)
+    private async void OnSignalingClicked(object sender, EventArgs e)
     {
         var appId = AppIdEntry.Text?.Trim();
         if (string.IsNullOrEmpty(appId))
@@ -98,36 +103,38 @@ public partial class MainPage : ContentPage
         }
 
         // The raw RTM surface, from the same process the RTC engine runs in. Login is a live
-        // signalling call reported through a ResultCallback; with an unregistered App ID it
-        // answers an error, which is exactly what this demo shows — the round trip, credentials
-        // or not. The façade's Net.Agora.Signaling wraps this into awaitable calls.
+        // signalling call; with an unregistered App ID it answers an error, which is exactly
+        // what this demo shows — the round trip, credentials or not. LoginAsync (the binding's
+        // own Task adapter over the ResultCallback overload) reports that answer by faulting
+        // with RtmOperationException, so the exchange reads as one try/catch.
+        RtmClient? rtm = null;
         try
         {
             var config = new RtmConfig.Builder(appId, "net-agora-sample").Build();
-            var rtm = RtmClient.Create(config);
+            rtm = RtmClient.Create(config);
             Append($"RTM created — logging in…");
 
-            rtm!.Login(appId, new LoginCallback(this, rtm));
+            // An App ID-only project logs in with the App ID as the token.
+            await rtm!.LoginAsync(appId);
+            Append("RTM login succeeded");
+            // Teardown; the result is deliberately ignored, as it always was here — the demo is
+            // the login round trip.
+            rtm.Logout(null);
+        }
+        catch (RtmOperationException exception)
+        {
+            Append($"RTM login answered: {exception.ErrorInfo?.ErrorReason ?? "unknown"}");
         }
         catch (Java.Lang.Exception exception)
         {
             Append($"RTM rejected the configuration: {exception.Message}");
         }
-    }
-
-    private sealed class LoginCallback(MainPage owner, RtmClient client) : Java.Lang.Object, IResultCallback
-    {
-        public void OnSuccess(Java.Lang.Object? responseInfo)
+        finally
         {
-            owner.Append("RTM login succeeded");
-            client.Logout(null);
-            RtmClient.Release();
-        }
-
-        public void OnFailure(ErrorInfo? errorInfo)
-        {
-            owner.Append($"RTM login answered: {errorInfo?.ErrorReason ?? "unknown"}");
-            RtmClient.Release();
+            if (rtm is not null)
+            {
+                RtmClient.Release();
+            }
         }
     }
 
@@ -166,16 +173,5 @@ public partial class MainPage : ContentPage
         {
             StopEngine();
         }
-    }
-
-    /// <summary>
-    /// Translates <c>IRtcEngineEventHandler</c>'s callbacks — a Java abstract class overridden
-    /// per-instance, not a .NET event — into UI updates. The SDK raises these on its own thread,
-    /// so anything touching the UI hops back through <see cref="Append"/>.
-    /// </summary>
-    private sealed class EngineHandler(MainPage owner) : IRtcEngineEventHandler
-    {
-        public override void OnError(int err) =>
-            owner.Append($"error {err}: {RtcEngine.GetErrorDescription(err)}");
     }
 }

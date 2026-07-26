@@ -52,6 +52,11 @@
       classes removed in Transforms/Metadata.xml). BG8605/BG8606 (unresolved Java types) and
       BG8801 (invalid parameter type) are deliberately left visible — they mean something else
       was left out of the binding.
+
+      CS1591 is permanent, not a to-do: Agora's javadoc cannot be imported (no -sources/-javadoc
+      classifier exists on Maven Central — verified 404 for full-rtc-basic 4.6.3 and agora-rtm
+      2.2.6, and the in-aar agora-rtc-sdk-javadoc.jar contains 0 entries), so IntelliSense is
+      hand-written on the Additions surface only.
     -->
     <NoWarn>$(NoWarn);CS1591;CS0108;CS0114;CS0618;BG8401;BG8400;BG8800</NoWarn>
   </PropertyGroup>
@@ -212,5 +217,63 @@
     <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="/" Visible="false" />
     <None Include="$(MSBuildThisFileDirectory)../LICENSE" Pack="true" PackagePath="licenses/" Visible="false" />
   </ItemGroup>
+
+  <!--
+    R8/ProGuard keep rules. A project that has a proguard.cfg gets it packed under proguard/ plus
+    the shared buildTransitive targets (renamed to <PackageId>.targets so NuGet auto-imports it
+    into consumers) that feeds it to the app's R8 run — see Agora.Proguard.targets for why the
+    bindings cannot rely on R8's own reachability analysis. Only the aars that ship no (or
+    partial) proguard.txt of their own need one: Signaling, Chat, Whiteboard, IoT, Fastboard.
+  -->
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/proguard.cfg')">
+    <!--
+      PackagePath is a directory on purpose: NuGet only honors a file-renaming PackagePath when
+      the source and target extensions match, and silently creates a directory named like the
+      file otherwise. The package id is already in the installed path, so the plain name loses
+      nothing.
+    -->
+    <None Include="$(MSBuildProjectDirectory)/proguard.cfg" Pack="true" PackagePath="proguard/" />
+    <None Include="$(MSBuildThisFileDirectory)Agora.Proguard.targets" Pack="true" PackagePath="buildTransitive/$(PackageId).targets" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    Drop the project's own .aar where it only duplicates a payload the package already carries.
+
+    Every non-application project produces one (_CreateAar in
+    Microsoft.Android.Sdk.AndroidLibraries.targets), built from the project's resources, assets,
+    manifest, embedded jars, native libraries and ProGuard rules, and the SDK packs it into
+    lib/<tfm> beside the artifacts. What lands in it here was measured per package rather than
+    assumed:
+
+      Signaling, Chat, IoT, Whiteboard, Fastboard  proguard.txt only, a few hundred bytes — the
+                                                   keep rules below, delivered the same way
+                                                   Agora's own .aars deliver theirs. Worth keeping.
+      Video, Voice                                 jni/libaosl.so for four ABIs, lifted out of the
+                                                   aosl artifact packed next to it. 2.2 MB of pure
+                                                   duplication per target framework, and the
+                                                   reason a consuming app warns XA4301 about a
+                                                   duplicate libaosl.so.
+      The 12 extensions                            the extension's own jni/*.so set, lifted out of
+                                                   the artifact packed next to it — up to 12 MB
+                                                   doubled in one package.
+
+    So the duplication is exactly the projects whose .aar holds native libraries: those come from
+    a companion artifact that ships in the same lib/<tfm> directory, and an app picks that up
+    through _ResolveAars, which globs every .aar out of a referenced package. Nothing else in
+    these projects contributes to the file. AgoraDropProjectAar defaults to the payload-only
+    packages and is set by the two RTC bindings, which are the bound projects carrying a
+    non-bound companion.
+  -->
+  <PropertyGroup>
+    <AgoraDropProjectAar Condition=" '$(AgoraDropProjectAar)' == '' And '$(AgoraBindArtifact)' == 'false' ">true</AgoraDropProjectAar>
+  </PropertyGroup>
+
+  <Target Name="AgoraRemoveDuplicateProjectAar"
+          AfterTargets="_IncludeAarInNuGetPackage"
+          Condition=" '$(AgoraDropProjectAar)' == 'true' ">
+    <ItemGroup>
+      <TfmSpecificPackageFile Remove="$(_AarOutputPath)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

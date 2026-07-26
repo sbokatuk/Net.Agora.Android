@@ -2,21 +2,42 @@
 
   <PropertyGroup>
     <!--
-      Which package to exercise (Video or Voice) and which of its target frameworks. Both go
-      through properties of our own: overriding TargetFramework directly on the command line
-      breaks restore, and the two packages cannot be referenced together — they carry the same
-      Java classes, so one app holds one of them.
+      Which package to exercise and which of its target frameworks. Both go through properties of
+      our own: overriding TargetFramework directly on the command line breaks restore, and the two
+      RTC packages cannot be referenced together — they carry the same Java classes, so one app
+      holds one of them. The other four products could technically coexist with an RTC package
+      (different Java packages, different — or no — native libraries), but each stays its own
+      flavor anyway so that its failure cannot hide behind, or be caused by, another product's
+      much larger payload. One product per app, always.
+
+      IoT is deliberately not a flavor: io.agora:iotsdk bundles whole private copies of the RTC and
+      RTM SDKs, so it is exclusive with everything, and only io.agora.iotlink is bound.
     -->
     <AgoraDevicePackage Condition=" '$(AgoraDevicePackage)' == '' ">Video</AgoraDevicePackage>
     <AgoraDeviceTargetFramework Condition=" '$(AgoraDeviceTargetFramework)' == '' ">net9.0-android35.0</AgoraDeviceTargetFramework>
     <TargetFramework>$(AgoraDeviceTargetFramework)</TargetFramework>
     <!--
-      The voice artifact is the same engine with the video pipeline stripped at the native layer;
-      the Java API surface still declares the video entry points. The smoke tests compile the
-      video checks out rather than tolerating their runtime error codes, so a video call failing
-      on the Video package stays a hard failure.
+      One define per flavor, and one suite per define: each flavor's file declares the whole
+      SmokeTests class, so MainActivity needs no flavor awareness at all.
+
+      AGORA_RTC covers Video and Voice together, because those two share a suite (SmokeTests.cs)
+      rather than having one each. It is a positive define rather than the "everything that is not
+      Signaling" it used to be: with six flavors, the negative form silently compiled the RTC suite
+      into every product that had not thought to exclude itself, and the first symptom was a page
+      of CS0246s about Agora.Rtc.
+
+      AGORA_VOICE then narrows within that suite. The voice artifact is the same engine with the
+      video pipeline stripped at the native layer; the Java API surface still declares the video
+      entry points, so the video calls compile against it and merely answer error codes that vary
+      by call. Compiling them out rather than tolerating those codes keeps a video failure on the
+      Video package a hard failure.
     -->
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Video' Or '$(AgoraDevicePackage)' == 'Voice' ">$(DefineConstants);AGORA_RTC</DefineConstants>
     <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Voice' ">$(DefineConstants);AGORA_VOICE</DefineConstants>
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Signaling' ">$(DefineConstants);AGORA_SIGNALING</DefineConstants>
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Chat' ">$(DefineConstants);AGORA_CHAT</DefineConstants>
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Whiteboard' ">$(DefineConstants);AGORA_WHITEBOARD</DefineConstants>
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Fastboard' ">$(DefineConstants);AGORA_FASTBOARD</DefineConstants>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -59,8 +80,17 @@
 
       A failure here should only ever mean "the .aar is not in the app" or "the binding does not
       drive the SDK", which are the two things this suite is meant to be able to say.
+
+      -p:AgoraShrinkTest=true is the deliberate exception: it turns Java shrinking back ON (and
+      only Java shrinking — managed trimming and AOT stay off) so one leg exercises the
+      configuration a store build actually ships with: R8 plus the auto-generated bound-surface
+      keeps plus whatever rules the package carries (in-aar proguard.txt for RTC, packed
+      proguard/ + buildTransitive/ for the products whose aars ship none — see
+      src/Agora.Proguard.targets). A regression in any of those layers surfaces here as the
+      Class.forName entry-point checks failing or the SDK dying at runtime.
     -->
-    <AndroidLinkTool></AndroidLinkTool>
+    <AndroidLinkTool Condition=" '$(AgoraShrinkTest)' != 'true' "></AndroidLinkTool>
+    <AndroidLinkTool Condition=" '$(AgoraShrinkTest)' == 'true' ">r8</AndroidLinkTool>
     <AndroidLinkMode>None</AndroidLinkMode>
     <RunAOTCompilation>false</RunAOTCompilation>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
@@ -74,6 +104,10 @@
   -->
   <PropertyGroup>
     <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Voice' ">$(AgoraVoiceVersion).$(AgoraVoiceBindingRevision)</AgoraDevicePackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Signaling' ">$(AgoraSignalingVersion).$(AgoraSignalingBindingRevision)</AgoraDevicePackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Chat' ">$(AgoraChatVersion).$(AgoraChatBindingRevision)</AgoraDevicePackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Whiteboard' ">$(AgoraWhiteboardVersion).$(AgoraWhiteboardBindingRevision)</AgoraDevicePackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Fastboard' ">$(AgoraFastboardVersion).$(AgoraFastboardBindingRevision)</AgoraDevicePackageVersion>
     <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' ">$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</AgoraDevicePackageVersion>
   </PropertyGroup>
 
@@ -84,5 +118,44 @@
     -->
     <PackageReference Include="Net.Agora.$(AgoraDevicePackage).Android" Version="[$(AgoraDevicePackageVersion)]" />
   </ItemGroup>
+
+  <!--
+    Fastboard only. Its transitive graph asks for two mutually-exclusive
+    Xamarin.AndroidX.Lifecycle.Common ranges and NuGet cannot unify them, so restore fails outright
+    with NU1107 before anything builds:
+
+        Fastboard.Android -> Whiteboard.Android -> WebKit -> Core 1.16.0.3
+            -> Lifecycle.Runtime 2.9.2.1 -> Lifecycle.Common [>= 2.9.2.1 && < 2.9.3]
+        Fastboard.Android -> AppCompat -> Fragment -> LiveData.Core 2.8.7.4
+            -> Lifecycle.Common [>= 2.8.7.4 && < 2.8.8]
+
+    Pinning the newer one directly is exactly what NU1107 asks for, and a direct reference outranks
+    every transitive vote. Scoped to Fastboard: the Whiteboard flavor does not pull the AppCompat
+    side of the diamond, so its restore is clean and must not be perturbed. The facade repository's
+    device tests carry the same pin for the same reason — this is a property of the package graph,
+    not of either test app.
+
+    It trades the NU1107 error for a handful of NU1608 warnings, because AppCompat's own
+    Lifecycle.Process and Lifecycle.LiveData.Core still declare the 2.8.x upper bound they were
+    published against. That is the documented cost of the direct-reference fix; chasing it with
+    further pins only moves the warning to the next package in the graph.
+  -->
+  <ItemGroup Condition=" '$(AgoraDevicePackage)' == 'Fastboard' ">
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Common" Version="2.9.2.1" />
+  </ItemGroup>
+
+  <!--
+    A typo in -p:AgoraDevicePackage otherwise fails as a page of CS0246s (no suite defines
+    SmokeTests, because no flavor define was set) or, worse, as a restore error about a package
+    that never existed. Say what actually went wrong instead.
+  -->
+  <PropertyGroup>
+    <AgoraDeviceFlavors>;Video;Voice;Signaling;Chat;Whiteboard;Fastboard;</AgoraDeviceFlavors>
+  </PropertyGroup>
+
+  <Target Name="_AgoraValidateDevicePackage" BeforeTargets="BeforeBuild">
+    <Error Condition="!$(AgoraDeviceFlavors.Contains(';$(AgoraDevicePackage);'))"
+           Text="AgoraDevicePackage='$(AgoraDevicePackage)' is not a device test flavor. Pick one of: $(AgoraDeviceFlavors.Trim(';').Replace(';', ', '))." />
+  </Target>
 
 </Project>
