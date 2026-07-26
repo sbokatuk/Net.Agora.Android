@@ -89,16 +89,23 @@ jobs:
         with:
           packages: 'platforms;android-34 platforms;android-35 platforms;android-36'
 
+      - name: Verify the native artifacts against build/checksums.txt
+        # Before the cache is restored, so it checks what the repositories are serving now rather
+        # than a copy this runner already trusted. A Maven coordinate is a mutable pointer and
+        # AndroidMavenLibrary performs no content check — see build/checksums.txt.
+        run: ./build/verify-artifacts.sh
+
       - name: Cache the Maven-resolved .aar
         uses: actions/cache@v4
         with:
           # AndroidMavenLibrary's cache (net9+) plus the net8.0-android34.0 DownloadFile fallback's
-          # obj/ output (see src/Agora.Binding.props) — both keyed on the pin, so a version bump
-          # invalidates the cache instead of silently reusing the wrong .aar.
+          # obj/ output (see src/Agora.Binding.props) — both keyed on the pin *and* the digests, so
+          # a version bump or a re-published artifact invalidates the cache instead of silently
+          # reusing the wrong .aar.
           path: |
             ~/.cache/dotnet-android/MavenCacheDirectory
             src/*/obj/*/maven
-          key: agora-android-maven-${{ hashFiles('Directory.Build.props') }}
+          key: agora-android-maven-${{ hashFiles('Directory.Build.props', 'build/checksums.txt') }}
 
       - name: Pack
         run: |
