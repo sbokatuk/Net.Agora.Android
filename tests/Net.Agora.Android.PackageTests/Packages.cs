@@ -152,6 +152,17 @@ public static class Packages
     /// Video/Voice and the extensions are deliberately absent: Agora ships rules inside those
     /// .aars and the Android build applies them on its own.
     /// </summary>
+    /// <summary>
+    /// The packages whose own project .aar would only repeat a native payload the package
+    /// already carries: the two RTC bindings (their .aar holds nothing but the aosl artifact's
+    /// libaosl.so) and the twelve extensions (theirs holds the extension's own .so set). The
+    /// remaining bindings are absent deliberately — their project .aar carries the ProGuard
+    /// rules, which is real content.
+    /// </summary>
+    public static IEnumerable<object[]> NativePayloadPackageFrameworks =>
+        new[] { Video, Voice }.Concat(Extensions.Select(e => e.Id))
+            .SelectMany(id => TargetFrameworks.Select(tfm => new object[] { id, tfm }));
+
     public static IEnumerable<object[]> ProguardPackageIds =>
         new[] { Signaling, Chat, IoT, Whiteboard, Fastboard }.Select(id => new object[] { id });
 

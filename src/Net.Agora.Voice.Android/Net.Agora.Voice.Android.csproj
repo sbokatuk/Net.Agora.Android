@@ -17,6 +17,12 @@
     <AgoraArtifact>voice-rtc-basic</AgoraArtifact>
     <AgoraNativeVersion>$(AgoraVoiceVersion)</AgoraNativeVersion>
     <VersionPrefix>$(AgoraVoiceVersion).$(AgoraVoiceBindingRevision)</VersionPrefix>
+    <!--
+      This project's own .aar holds nothing but a second copy of the aosl artifact's
+      jni/libaosl.so — see AgoraRemoveDuplicateProjectAar in Agora.Binding.props. Dropping it
+      from the package is also what clears XA4301 (duplicate libaosl.so) in a consuming app.
+    -->
+    <AgoraDropProjectAar>true</AgoraDropProjectAar>
   </PropertyGroup>
 
   <Import Project="../Agora.Binding.props" />

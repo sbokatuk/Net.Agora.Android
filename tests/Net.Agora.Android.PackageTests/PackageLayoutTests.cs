@@ -50,6 +50,22 @@ public class PackageLayoutTests
     }
 
     [Theory]
+    [MemberData(nameof(Packages.NativePayloadPackageFrameworks), MemberType = typeof(Packages))]
+    public void Package_does_not_ship_the_native_payload_twice(string packageId, string tfm)
+    {
+        using var package = Packages.OpenPackage(packageId);
+
+        // Every non-application project produces its own <PackageId>.aar and the SDK packs it
+        // beside the artifacts. For these packages the SDK fills it with the jni/*.so set lifted
+        // out of a companion artifact in the same folder — up to 12 MB duplicated per target
+        // framework, and a duplicate-library (XA4301) warning in the consuming app. Suppressed by
+        // AgoraRemoveDuplicateProjectAar; asserted here because the waste is invisible in a build
+        // log. The packages whose project .aar carries real content (the ProGuard rules) are not
+        // on this axis — see Packages.NativePayloadPackages.
+        Assert.Null(package.GetEntry($"lib/{tfm}/{packageId}.aar"));
+    }
+
+    [Theory]
     [MemberData(nameof(Packages.ProguardPackageIds), MemberType = typeof(Packages))]
     public void Package_ships_r8_keep_rules_when_its_aar_has_none(string packageId)
     {

@@ -236,4 +236,44 @@
     <None Include="$(MSBuildThisFileDirectory)Agora.Proguard.targets" Pack="true" PackagePath="buildTransitive/$(PackageId).targets" Visible="false" />
   </ItemGroup>
 
+  <!--
+    Drop the project's own .aar where it only duplicates a payload the package already carries.
+
+    Every non-application project produces one (_CreateAar in
+    Microsoft.Android.Sdk.AndroidLibraries.targets), built from the project's resources, assets,
+    manifest, embedded jars, native libraries and ProGuard rules, and the SDK packs it into
+    lib/<tfm> beside the artifacts. What lands in it here was measured per package rather than
+    assumed:
+
+      Signaling, Chat, IoT, Whiteboard, Fastboard  proguard.txt only, a few hundred bytes — the
+                                                   keep rules below, delivered the same way
+                                                   Agora's own .aars deliver theirs. Worth keeping.
+      Video, Voice                                 jni/libaosl.so for four ABIs, lifted out of the
+                                                   aosl artifact packed next to it. 2.2 MB of pure
+                                                   duplication per target framework, and the
+                                                   reason a consuming app warns XA4301 about a
+                                                   duplicate libaosl.so.
+      The 12 extensions                            the extension's own jni/*.so set, lifted out of
+                                                   the artifact packed next to it — up to 12 MB
+                                                   doubled in one package.
+
+    So the duplication is exactly the projects whose .aar holds native libraries: those come from
+    a companion artifact that ships in the same lib/<tfm> directory, and an app picks that up
+    through _ResolveAars, which globs every .aar out of a referenced package. Nothing else in
+    these projects contributes to the file. AgoraDropProjectAar defaults to the payload-only
+    packages and is set by the two RTC bindings, which are the bound projects carrying a
+    non-bound companion.
+  -->
+  <PropertyGroup>
+    <AgoraDropProjectAar Condition=" '$(AgoraDropProjectAar)' == '' And '$(AgoraBindArtifact)' == 'false' ">true</AgoraDropProjectAar>
+  </PropertyGroup>
+
+  <Target Name="AgoraRemoveDuplicateProjectAar"
+          AfterTargets="_IncludeAarInNuGetPackage"
+          Condition=" '$(AgoraDropProjectAar)' == 'true' ">
+    <ItemGroup>
+      <TfmSpecificPackageFile Remove="$(_AarOutputPath)" />
+    </ItemGroup>
+  </Target>
+
 </Project>
