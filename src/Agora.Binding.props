@@ -52,6 +52,11 @@
       classes removed in Transforms/Metadata.xml). BG8605/BG8606 (unresolved Java types) and
       BG8801 (invalid parameter type) are deliberately left visible — they mean something else
       was left out of the binding.
+
+      CS1591 is permanent, not a to-do: Agora's javadoc cannot be imported (no -sources/-javadoc
+      classifier exists on Maven Central — verified 404 for full-rtc-basic 4.6.3 and agora-rtm
+      2.2.6, and the in-aar agora-rtc-sdk-javadoc.jar contains 0 entries), so IntelliSense is
+      hand-written on the Additions surface only.
     -->
     <NoWarn>$(NoWarn);CS1591;CS0108;CS0114;CS0618;BG8401;BG8400;BG8800</NoWarn>
   </PropertyGroup>

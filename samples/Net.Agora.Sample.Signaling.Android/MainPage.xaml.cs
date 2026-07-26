@@ -5,14 +5,17 @@ namespace Net.Agora.Sample.Signaling.Android;
 
 /// <summary>
 /// A tiny chat room over Agora Signaling, driven through the <b>raw</b> <c>Agora.Rtm</c> binding
-/// rather than the cross-platform façade — the point of this sample is to show what
-/// <c>Net.Agora.Signaling</c> hides.
+/// rather than the cross-platform façade — the point of this sample is to show the binding's own
+/// ergonomics.
 ///
-/// Every operation here reports through a Java <c>ResultCallback</c> (login, subscribe, publish),
-/// and events arrive on an <c>RtmEventListener</c> the SDK calls on its own thread. The façade in
-/// <c>sbokatuk/Net.Agora</c> turns all of that into awaitable calls and ordinary .NET events; if
-/// that is what you want, use <c>Net.Agora.Signaling</c> instead, which
-/// <c>samples/Net.Agora.Sample.Signaling</c> there demonstrates.
+/// Every operation (login, subscribe, publish, …) is awaited through the binding's Task adapters
+/// (<c>LoginAsync</c> and friends, hand-written Additions over the SDK's Java
+/// <c>ResultCallback</c> overloads) and fails by throwing <see cref="RtmOperationException"/>;
+/// incoming traffic arrives through the C# events the binding generates on
+/// <see cref="RtmClient"/> — no callback or listener classes to write. The SDK still raises
+/// those events on its own thread, so UI updates hop through <see cref="Append"/>. The
+/// cross-platform façade in <c>sbokatuk/Net.Agora</c> (package <c>Net.Agora.Signaling</c>) adds
+/// the same shape across platforms; use it when the app is not Android-only.
 /// </summary>
 public partial class MainPage : ContentPage
 {
@@ -25,7 +28,7 @@ public partial class MainPage : ContentPage
         InitializeComponent();
     }
 
-    private void OnLoginClicked(object sender, EventArgs e)
+    private async void OnLoginClicked(object sender, EventArgs e)
     {
         var appId = AppIdEntry.Text?.Trim();
         var userId = UserIdEntry.Text?.Trim();
@@ -41,9 +44,9 @@ public partial class MainPage : ContentPage
 
         try
         {
-            var config = new RtmConfig.Builder(appId, userId)
-                .EventListener(new Listener(this))
-                .Build();
+            // No .EventListener(...) on the builder: the generated RtmClient exposes the same
+            // callbacks as C# events, subscribed below once the client exists.
+            var config = new RtmConfig.Builder(appId, userId).Build();
 
             _client = RtmClient.Create(config);
             if (_client is null)
@@ -55,15 +58,23 @@ public partial class MainPage : ContentPage
 
             _channel = channel;
 
-            // Login is fire-and-forget: the result arrives on the callback, not from this call.
-            // An App ID-only project logs in with the App ID as the token.
-            _client.Login(appId, new Callback(
-                onSuccess: () => Subscribe(channel),
-                onFailure: reason =>
-                {
-                    Append($"login failed: {reason}");
-                    Reset();
-                }));
+            _client.MessageEvent += OnMessage;
+            _client.ConnectionStateChanged += (_, change) => Append($"connection: {change.State}");
+            _client.TokenPrivilegeWillExpire += (_, _) => Append("token expires soon — renew it");
+
+            // An App ID-only project logs in with the App ID as the token. Awaited straight
+            // through: the Task completes when the SDK's ResultCallback fires, and a failure
+            // arrives as RtmOperationException in the catch below.
+            await _client.LoginAsync(appId);
+            await _client.SubscribeAsync(channel);
+
+            Append($"logged in and subscribed to {channel}");
+            SetLoggedIn(true);
+        }
+        catch (RtmOperationException exception)
+        {
+            Append($"login failed: {exception.ErrorInfo?.ErrorReason ?? exception.Message}");
+            Reset();
         }
         catch (Java.Lang.Exception exception)
         {
@@ -72,25 +83,36 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void Subscribe(string channel) =>
-        _client?.Subscribe(channel, new SubscribeOptions(), new Callback(
-            onSuccess: () => MainThread.BeginInvokeOnMainThread(() =>
-            {
-                Append($"logged in and subscribed to {channel}");
-                SetLoggedIn(true);
-            }),
-            onFailure: reason => Append($"subscribe failed: {reason}")));
+    private void OnMessage(object? sender, MessageEventEventArgs e)
+    {
+        if (e.Event?.ChannelName is not { } channel)
+        {
+            return;
+        }
 
-    private void OnLogoutClicked(object sender, EventArgs e)
+        var text = e.Event.Message?.Data is Java.Lang.String s ? s.ToString() : "[binary]";
+        Append($"{e.Event.PublisherId}: {text}");
+    }
+
+    private async void OnLogoutClicked(object sender, EventArgs e)
     {
         if (_client is not null && _channel is not null)
         {
-            _client.Unsubscribe(_channel, new Callback(
-                onSuccess: () => Append($"unsubscribed from {_channel}"),
-                onFailure: reason => Append($"unsubscribe failed: {reason}")));
+            try
+            {
+                await _client.UnsubscribeAsync(_channel);
+                Append($"unsubscribed from {_channel}");
+            }
+            catch (RtmOperationException exception)
+            {
+                Append($"unsubscribe failed: {exception.ErrorInfo?.ErrorReason ?? exception.Message}");
+            }
+
+            // The logout result is deliberately ignored, as it always was here — the session is
+            // being torn down either way.
+            _client.Logout(null);
         }
 
-        _client?.Logout(null);
         // RtmClient is a process-wide singleton, released rather than disposed.
         RtmClient.Release();
         _client = null;
@@ -99,7 +121,7 @@ public partial class MainPage : ContentPage
         SetLoggedIn(false);
     }
 
-    private void OnSendClicked(object sender, EventArgs e)
+    private async void OnSendClicked(object sender, EventArgs e)
     {
         var message = MessageEntry.Text;
         if (_client is null || _channel is null || string.IsNullOrWhiteSpace(message))
@@ -107,14 +129,18 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        _client.Publish(_channel, message, new PublishOptions(), new Callback(
-            onSuccess: () => MainThread.BeginInvokeOnMainThread(() =>
-            {
-                // A publisher does not receive its own message back — echo it locally.
-                Append($"you: {message}");
-                MessageEntry.Text = "";
-            }),
-            onFailure: reason => Append($"send failed: {reason}")));
+        try
+        {
+            await _client.PublishAsync(_channel, message);
+
+            // A publisher does not receive its own message back — echo it locally.
+            Append($"you: {message}");
+            MessageEntry.Text = "";
+        }
+        catch (RtmOperationException exception)
+        {
+            Append($"send failed: {exception.ErrorInfo?.ErrorReason ?? exception.Message}");
+        }
     }
 
     private void Reset()
@@ -139,38 +165,4 @@ public partial class MainPage : ContentPage
         MessagesLabel.Text = _log.ToString();
         MessagesScroll.ScrollToAsync(0, MessagesLabel.Height, animated: false);
     });
-
-    /// <summary>One RTM operation's completion — the Java ResultCallback the façade hides.</summary>
-    private sealed class Callback(Action onSuccess, Action<string> onFailure)
-        : Java.Lang.Object, IResultCallback
-    {
-        public void OnSuccess(Java.Lang.Object? responseInfo) => onSuccess();
-
-        public void OnFailure(ErrorInfo? errorInfo) =>
-            onFailure(errorInfo?.ErrorReason ?? "unknown error");
-    }
-
-    /// <summary>The event listener the SDK calls on its own thread.</summary>
-    private sealed class Listener(MainPage owner) : Java.Lang.Object, IRtmEventListener
-    {
-        public void OnMessageEvent(MessageEvent? e)
-        {
-            if (e?.ChannelName is not { } channel)
-            {
-                return;
-            }
-
-            var text = e.Message?.Data is Java.Lang.String s ? s.ToString() : "[binary]";
-            owner.Append($"{e.PublisherId}: {text}");
-        }
-
-        public void OnConnectionStateChanged(
-            string? channelName,
-            RtmConstants.RtmConnectionState? state,
-            RtmConstants.RtmConnectionChangeReason? reason) =>
-            owner.Append($"connection: {state}");
-
-        public void OnTokenPrivilegeWillExpire(string? channelName) =>
-            owner.Append("token expires soon — renew it");
-    }
 }

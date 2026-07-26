@@ -109,4 +109,48 @@ public class BindingApiTests
         Assert.Contains("MContext", properties);
         Assert.Contains("MEventHandler", properties);
     }
+
+    [Theory]
+    [MemberData(nameof(Packages.RtcPackageFrameworks), MemberType = typeof(Packages))]
+    public void RtcEngine_exposes_the_additions_events(string packageId, string tfm)
+    {
+        using var api = OpenBinding(packageId, tfm);
+
+        var events = api.EventsOf("Agora.Rtc.RtcEngine");
+
+        // The events are not generated: they come from src/shared/Agora.Rtc.RtcEngineEvents.cs,
+        // one hand-written file <Compile>-mirrored into both RTC projects. That wiring is
+        // exactly the kind of thing that silently falls out of one .csproj and not the other, so
+        // this runs over both packages and every target framework the package ships.
+        Assert.Contains("JoinChannelSuccess", events);
+        Assert.Contains("UserJoined", events);
+    }
+
+    [Theory]
+    [MemberData(nameof(Packages.SignalingPackageFrameworks), MemberType = typeof(Packages))]
+    public void RtmClient_async_adapters_are_in_the_package(string packageId, string tfm)
+    {
+        using var api = OpenBinding(packageId, tfm);
+
+        // Hand-written Additions (src/Net.Agora.Signaling.Android/Additions/), not generated —
+        // so nothing else fails if the file stops compiling into the package. Asserting the
+        // return type and not just the name: an adapter that regressed to void (or to
+        // Task<something>) would break every awaiting consumer while still "existing".
+        var methods = api.MethodSignaturesOf("Agora.Rtm.RtmClientAsyncExtensions");
+
+        Assert.Contains(methods, m => m.Name == "LoginAsync" && m.ReturnType == "System.Threading.Tasks.Task");
+    }
+
+    [Theory]
+    [MemberData(nameof(Packages.SignalingPackageFrameworks), MemberType = typeof(Packages))]
+    public void RtmOperationException_carries_the_ErrorInfo(string packageId, string tfm)
+    {
+        using var api = OpenBinding(packageId, tfm);
+
+        // The async adapters' whole error contract is "catch RtmOperationException, read
+        // ErrorInfo". Losing the type or the property would turn every failure into an
+        // uncatchable-by-name exception, so both are pinned here.
+        Assert.Contains("Agora.Rtm.RtmOperationException", api.PublicTypes);
+        Assert.Contains("ErrorInfo", api.PropertiesOf("Agora.Rtm.RtmOperationException"));
+    }
 }

@@ -10,8 +10,9 @@ set -euo pipefail
 #
 # Usage: run-emulator-tests.sh VERSION [TARGET_FRAMEWORK] [PACKAGE]
 #
-# PACKAGE is the packages.tsv id — Video (default) or Voice. One run exercises one package: the
-# two carry the same Java classes, so a single app cannot hold both.
+# PACKAGE is the packages.tsv id — Video (default), Voice or Signaling. One run exercises one
+# package: the two RTC packages carry the same Java classes, so a single app cannot hold both,
+# and Signaling swaps in its own suite (see tests/Net.Agora.Android.DeviceTests).
 
 VERSION="${1:?a package version is required}"
 TARGET_FRAMEWORK="${2:-net10.0-android36.0}"

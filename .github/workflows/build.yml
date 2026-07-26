@@ -233,20 +233,24 @@ jobs:
       # "net8 only", "Voice only" and "all of them" point at very different causes.
       fail-fast: false
       matrix:
-        # One leg per package: Video and Voice carry the same Java classes, so a single device
-        # test app holds exactly one of them — see tests/Net.Agora.Android.DeviceTests. Signaling
-        # has no leg here yet: its packed binding is exercised end to end by the façade
-        # repository's own emulator suite, and this repository's package tests cover its layout
-        # and API surface.
+        # One leg per RTC package: Video and Voice carry the same Java classes, so a single
+        # device test app holds exactly one of them — see tests/Net.Agora.Android.DeviceTests.
+        # Signaling rides the shrink include below rather than this axis: one plain Signaling leg
+        # would mostly repeat what its package tests and the façade repository's emulator suite
+        # already cover, but the shrink leg is where it earns its keep.
         package: [Video, Voice]
         target-framework: ${{ fromJSON(inputs.e2e-target-frameworks) }}
         shrink: [0]
         include:
           # One extra leg with Java shrinking (R8) on — the configuration a store build ships
-          # with. It exercises the auto-generated bound-surface keeps plus the packages' own
-          # rules end to end; the plain legs stay shrink-free so their failures keep meaning
-          # "payload missing / binding broken". See the DeviceTests csproj comment.
-          - package: Video
+          # with. Signaling deliberately: agora-rtm ships no proguard.txt inside its .aar, so
+          # this package carries its own rules (packed proguard/ + buildTransitive/ — see
+          # src/Agora.Proguard.targets), and this leg is the only place those *packaged* rules
+          # are exercised on a device. The RTC .aars ship their own in-aar rules, which the
+          # Android build applies without our help — a Video shrink leg proved strictly less.
+          # The plain legs stay shrink-free so their failures keep meaning "payload missing /
+          # binding broken". See the DeviceTests csproj comment.
+          - package: Signaling
             target-framework: net10.0-android36.0
             shrink: 1
     steps:

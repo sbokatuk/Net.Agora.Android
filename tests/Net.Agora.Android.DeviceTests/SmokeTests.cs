@@ -1,10 +1,17 @@
+// The whole RTC suite is compiled out of the Signaling flavor rather than branched at runtime:
+// with only Net.Agora.Signaling.Android referenced, nothing under Agora.Rtc even resolves. The
+// Signaling flavor's suite is SignalingSmokeTests.cs, which defines the same SmokeTests class
+// under AGORA_SIGNALING so MainActivity needs no flavor awareness at all.
+#if !AGORA_SIGNALING
 using Agora.Rtc;
+#endif
 
 namespace Net.Agora.Android.DeviceTests;
 
 /// <summary>A single on-device check. Throws to fail.</summary>
 public sealed record SmokeTest(string Name, Action Execute);
 
+#if !AGORA_SIGNALING
 /// <summary>
 /// End-to-end checks that only mean anything on a real device or emulator: they load the native
 /// Agora engine out of the packaged .aar files and drive the raw binding —
@@ -55,6 +62,7 @@ public static class SmokeTests
         new("reports the native SDK version", ReportsTheSdkVersion),
         new("answers an error description without an engine", AnswersAnErrorDescription),
         new("creates the engine from a syntactically valid App ID", CreatesTheEngine),
+        new("subscribes and unsubscribes the binding's C# events", SubscribesTheCSharpEvents),
 #if AGORA_VOICE
         new("enables and disables audio", EnablesAndDisablesMedia),
         new("mutes and unmutes the local audio stream", MutesAndUnmutesLocalStreams),
@@ -145,17 +153,41 @@ public static class SmokeTests
         // RtcEngineConfig binds each of its Java fields (mAppId, mContext, ...) twice: once as the
         // plain field (MAppId, settable) and once through a same-named read-only getter method
         // (AppId) the SDK also exposes. Only the M-prefixed field form has a setter.
+        //
+        // No MEventHandler: create() only requires the context (addHandler(null) is a no-op in
+        // the Java SDK — verified against the 4.6.3 bytecode), and the next check subscribes the
+        // binding's C# events instead, which install their own handler through AddHandler.
         var config = new RtcEngineConfig
         {
             MContext = Context,
             MAppId = AppId,
-            MEventHandler = new Handler(),
         };
 
         _engine = RtcEngine.Create(config);
 
         Assert(_engine is not null, "RtcEngine.Create returned null.");
         Report("engine created — native libraries loaded");
+    }
+
+    /// <summary>
+    /// Exercises the hand-written events surface (Additions/RtcEngineEvents.cs in the binding)
+    /// on a real engine: the first subscription constructs the private dispatcher — a Java
+    /// callable wrapper, so this proves its ACW is packaged and registered — and crosses JNI
+    /// through AddHandler. Nothing here can make a callback *fire* without joining a channel
+    /// (a live signalling call this suite deliberately stops short of), so subscribe/unsubscribe
+    /// completing without a throw is the assertion.
+    /// </summary>
+    private static void SubscribesTheCSharpEvents()
+    {
+        EventHandler<RtcErrorEventArgs> onError = (_, e) => Report($"error event: {e.Code}");
+        EventHandler<RtcJoinChannelSuccessEventArgs> onJoined = (_, e) => Report($"joined {e.Channel}");
+
+        Engine.Error += onError;
+        Engine.JoinChannelSuccess += onJoined;
+        Engine.JoinChannelSuccess -= onJoined;
+        Engine.Error -= onError;
+
+        Report("C# events subscribed through the additions dispatcher");
     }
 
     private static void EnablesAndDisablesMedia()
@@ -218,12 +250,5 @@ public static class SmokeTests
                 $"{call} returned {result}: {RtcEngine.GetErrorDescription(-result)}");
         }
     }
-
-    /// <summary>
-    /// The engine requires an event handler to construct. Nothing here joins a channel, so no
-    /// callback is expected to fire — the default (empty) overrides are the point.
-    /// </summary>
-    private sealed class Handler : IRtcEngineEventHandler
-    {
-    }
 }
+#endif

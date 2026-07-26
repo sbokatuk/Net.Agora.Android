@@ -39,6 +39,16 @@
     <AndroidNamespaceReplacement Include="IO.Agora.Rtc2" Replacement="Agora.Rtc" />
   </ItemGroup>
 
+  <!--
+    Hand-written C# events over the generated partial RtcEngine. One shared file, mirrored into
+    this project AND Net.Agora.Video.Android the same way: both bind the identical io.agora.rtc2
+    API layer into the same Agora.Rtc namespace, and the packages are mutually exclusive in one
+    app, so the additions must exist identically in each and can never collide.
+  -->
+  <ItemGroup>
+    <Compile Include="../shared/Agora.Rtc.RtcEngineEvents.cs" Link="Additions/RtcEngineEvents.cs" />
+  </ItemGroup>
+
   <PropertyGroup>
     <Description>.NET for Android / .NET MAUI bindings for the Agora Voice Android SDK, generated from io.agora.rtc:voice-rtc-basic $(AgoraVoiceVersion) on Maven Central. Lets a .NET app join Agora RTC channels and publish/subscribe audio, without carrying the video codecs. Use Net.Agora.Video.Android instead if the app ever shows or sends video.</Description>
     <PackageTags>$(PackageTags);Voice;RTC;audio;streaming</PackageTags>

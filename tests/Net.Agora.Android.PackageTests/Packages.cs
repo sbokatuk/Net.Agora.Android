@@ -183,6 +183,10 @@ public static class Packages
         All.Where(p => p.LegacyPrefix == "IO.Agora.Rtc2")
             .SelectMany(p => TargetFrameworks.Select(tfm => new object[] { p.Id, tfm }));
 
+    /// <summary>The Signaling package only — the axis of the RTM additions checks.</summary>
+    public static IEnumerable<object[]> SignalingPackageFrameworks =>
+        TargetFrameworks.Select(tfm => new object[] { Signaling, tfm });
+
     public static (string Id, string AarPrefix, long MinAarBytes, long MinAssemblyBytes, string[] CoreTypes, string LegacyPrefix, int MinPublicTypes) Row(string packageId) =>
         All.Single(p => p.Id == packageId);
 

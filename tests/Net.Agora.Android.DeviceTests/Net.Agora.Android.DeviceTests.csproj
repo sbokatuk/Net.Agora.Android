@@ -2,10 +2,12 @@
 
   <PropertyGroup>
     <!--
-      Which package to exercise (Video or Voice) and which of its target frameworks. Both go
-      through properties of our own: overriding TargetFramework directly on the command line
-      breaks restore, and the two packages cannot be referenced together — they carry the same
-      Java classes, so one app holds one of them.
+      Which package to exercise (Video, Voice or Signaling) and which of its target frameworks.
+      Both go through properties of our own: overriding TargetFramework directly on the command
+      line breaks restore, and the two RTC packages cannot be referenced together — they carry
+      the same Java classes, so one app holds one of them. Signaling could technically coexist
+      with an RTC package, but stays its own flavor anyway so a Signaling failure cannot hide
+      behind (or be caused by) the much larger RTC payload.
     -->
     <AgoraDevicePackage Condition=" '$(AgoraDevicePackage)' == '' ">Video</AgoraDevicePackage>
     <AgoraDeviceTargetFramework Condition=" '$(AgoraDeviceTargetFramework)' == '' ">net9.0-android35.0</AgoraDeviceTargetFramework>
@@ -14,9 +16,12 @@
       The voice artifact is the same engine with the video pipeline stripped at the native layer;
       the Java API surface still declares the video entry points. The smoke tests compile the
       video checks out rather than tolerating their runtime error codes, so a video call failing
-      on the Video package stays a hard failure.
+      on the Video package stays a hard failure. Signaling is a different product entirely
+      (Agora.Rtm, nothing from Agora.Rtc resolves), so its define swaps in a separate suite —
+      see SignalingSmokeTests.cs.
     -->
     <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Voice' ">$(DefineConstants);AGORA_VOICE</DefineConstants>
+    <DefineConstants Condition=" '$(AgoraDevicePackage)' == 'Signaling' ">$(DefineConstants);AGORA_SIGNALING</DefineConstants>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -83,6 +88,7 @@
   -->
   <PropertyGroup>
     <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Voice' ">$(AgoraVoiceVersion).$(AgoraVoiceBindingRevision)</AgoraDevicePackageVersion>
+    <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' And '$(AgoraDevicePackage)' == 'Signaling' ">$(AgoraSignalingVersion).$(AgoraSignalingBindingRevision)</AgoraDevicePackageVersion>
     <AgoraDevicePackageVersion Condition=" '$(AgoraDevicePackageVersion)' == '' ">$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</AgoraDevicePackageVersion>
   </PropertyGroup>
 
