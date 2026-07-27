@@ -1,0 +1,29 @@
+# What the upstream-drift workflow watches, and the single source of truth for it.
+#
+# build/check-upstream.sh reads this; it knows how to query each ecosystem but nothing about which
+# components this repository binds. Adding a native SDK means adding a row here.
+#
+# Columns are single-tab-separated.
+#   group    reporting group - one GitHub issue per group, titled with this text. These mirror the
+#            release tracks in build/tracks.tsv on purpose: a drift report then lands on the same
+#            axis as the release that fixes it, instead of mixing RTC and Chat news into one thread.
+#   label    how the component is named inside the issue
+#   kind     cocoapods | maven | github-release | github-tag
+#   pin      the MSBuild property in Directory.Build.props holding the pinned version
+#   locator  kind-specific: pod name, groupId:artifactId[:packaging][@repo], or owner/repo
+#   confirm  download URL template with {version}, or "-" to derive it from the locator
+#
+# The Video and Voice pins move together but are separate properties and separate Maven artifacts,
+# so both are checked: Agora has shipped one without the other before.
+#
+# group	label	kind	pin	locator	confirm
+RTC	Agora RTC (Video)	maven	AgoraVideoVersion	io.agora.rtc:full-sdk:aar	-
+RTC	Agora RTC (Voice)	maven	AgoraVoiceVersion	io.agora.rtc:voice-sdk:aar	-
+Signaling	Agora Signaling (RTM)	maven	AgoraSignalingVersion	io.agora:agora-rtm:aar	-
+Chat	Agora Chat	maven	AgoraChatVersion	io.agora.rtc:chat-sdk:aar	-
+IoT	Agora IoT	maven	AgoraIoTVersion	io.agora:iotsdk:aar	-
+# netless's, not Agora's own, and resolved from JitPack rather than Central - see the projects'
+# .csproj files. JitPack builds on demand, so a tag can exist there before any artifact does;
+# the download confirmation is what keeps that from being reported as a release.
+Whiteboard	netless Whiteboard	maven	AgoraWhiteboardVersion	com.github.netless-io:whiteboard-android:aar@https://jitpack.io	-
+Fastboard	netless Fastboard	maven	AgoraFastboardVersion	com.github.netless-io:fastboard-android:aar@https://jitpack.io	-
