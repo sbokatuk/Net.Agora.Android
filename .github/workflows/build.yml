@@ -7,6 +7,16 @@ name: build
 on:
   workflow_call:
     inputs:
+      verify:
+        description: >
+          Whether to run the verification jobs — package validation, the sample builds, the
+          Release link checks and the e2e suites. Pull requests leave it at true, and are the only
+          place any of this runs. Releases pass false: the tagged commit was already verified on
+          its pull request, so a tag packs and publishes and nothing more. The gate is the same
+          input, with the same name and the same meaning, in every repository.
+        required: false
+        default: true
+        type: boolean
       suffix:
         description: >
           Optional prerelease suffix (e.g. beta.12.34) appended to every package's own version.
@@ -42,16 +52,6 @@ on:
         required: false
         default: 35
         type: number
-      build-sample:
-        description: >
-          Whether to compile the MAUI sample against the packed package. Defaults to true, because
-          it is a verification step and a new caller should get it. Releases turn it off: by then
-          the same commit has already been through it on the pull request, and it costs a MAUI
-          workload install between the package being built and being published.
-        required: false
-        default: true
-        type: boolean
-
 env:
   DOTNET_NOLOGO: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
@@ -129,7 +129,7 @@ jobs:
     needs: pack
     # Skipped on a scoped track release: the package tests assert the whole package set, which a
     # single-track pack does not produce — and the merged commit already ran them on its PR.
-    if: ${{ inputs.track == '' }}
+    if: ${{ inputs.verify }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,7 +166,7 @@ jobs:
     timeout-minutes: 60
     needs: pack
     # Off on a scoped track release too — see the validate job.
-    if: ${{ inputs.build-sample && inputs.track == '' }}
+    if: ${{ inputs.verify }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -313,7 +313,7 @@ jobs:
     timeout-minutes: 60
     needs: pack
     # Off on a scoped track release — the tag's commit was device-tested on its PR. See validate.
-    if: ${{ inputs.track == '' }}
+    if: ${{ inputs.verify }}
     runs-on: ubuntu-latest
     strategy:
       # fail-fast off: when one leg breaks it is worth knowing whether the others did too, since
