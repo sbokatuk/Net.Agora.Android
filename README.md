@@ -154,11 +154,10 @@ export AGORA_DEVICE_RID=android-arm64          # an arm64 emulator, e.g. on Appl
 ## Sample
 
 `samples/Net.Agora.Sample.Android` is a MAUI app built straight against the packages — no
-cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview
-with a front/back flip: an App ID entry, camera/microphone permission handling, and a
-`SurfaceView` behind a small MAUI handler (see its `AgoraVideoView.cs` for why a custom handler
-rather than a wrapped view). Its **Try Signaling** button drives `Agora.Rtm.RtmClient` from the
-same app — the coexistence of the two products, proven at dex-merge time just by building.
+cross-platform façade — that creates `Agora.Rtc.RtcEngine`, joins a channel and renders the first
+remote user's video into a second view next to the local preview: an App ID entry, an optional
+channel/token pair, camera/microphone permission handling, and a `SurfaceView` behind a small MAUI
+handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrapped view).
 
 `samples/Net.Agora.Sample.Voice.Android` is its audio-only sibling against
 `Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
@@ -167,6 +166,22 @@ reports, with no camera permission anywhere.
 `samples/Net.Agora.Sample.Signaling.Android` drives `Agora.Rtm.RtmClient` on its own — a tiny chat
 room (log in, subscribe, publish, receive) written against the raw callback API, to show what the
 façade hides.
+
+`samples/Net.Agora.Sample.Chat.Android` drives `Agora.Chat.ChatClient` on its own — the same tiny
+two-user chat shape as Signaling's sample, against `IO.Agora.ICallBack` rather than an [Async]
+counterpart, because that is what this binding generates: unlike Signaling and Voice, nothing here
+is hand-wrapped into Task-returning Additions. Incoming messages still arrive as an ordinary .NET
+event, `ChatManager.MessageReceived`.
+
+`samples/Net.Agora.Sample.Fastboard.Android` drives `Agora.Fastboard.Fastboard`/`FastRoom` on its
+own: an `Agora.Fastboard.FastboardView` the app creates and hands to the SDK, which draws its own
+toolbar on top — join, read-only toggle, and driving the board from code (a red pencil) alongside
+that toolbar.
+
+`samples/Net.Agora.Sample.Whiteboard.Android` drives `Agora.Whiteboard.WhiteSdk`/`Room` on its
+own: an `Agora.Whiteboard.WhiteboardView` the app creates, joined through netless's own
+`IPromise` shape rather than an awaitable Task, with a hand-rolled toolbar (pencil, eraser,
+undo/redo, clear) since — unlike Fastboard — the plain SDK draws nothing of its own.
 
 The full join/publish/subscribe flows, wrapped behind one cross-platform API, are
 [`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s samples.

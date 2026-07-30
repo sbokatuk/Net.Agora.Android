@@ -66,6 +66,62 @@ public class PackageLayoutTests
     }
 
     [Theory]
+    [MemberData(nameof(Packages.SignalingPackageFrameworks), MemberType = typeof(Packages))]
+    public void Signaling_package_does_not_bundle_agora_rtm_s_own_stale_aosl(string packageId, string tfm)
+    {
+        using var package = Packages.OpenPackage(packageId);
+
+        var rtmAar = package.Entries.SingleOrDefault(e =>
+            e.FullName.StartsWith($"lib/{tfm}/", StringComparison.Ordinal)
+            && e.Name.StartsWith("agora-rtm-", StringComparison.Ordinal));
+        Assert.True(rtmAar is not null, $"{packageId} carries no agora-rtm-*.aar for {tfm}.");
+
+        using var rtmAarStream = Packages.ReadEntry(package, rtmAar!.FullName);
+        using var rtmAarArchive = new ZipArchive(rtmAarStream, ZipArchiveMode.Read);
+
+        // agora-rtm's own .aar vendors an older libaosl.so, missing symbols (aosl_ref_magic and
+        // friends) the RTC engine needs — see AgoraStripNativeLibraryEntries in
+        // src/Agora.Binding.props. Left in place, an app referencing both this package and Video
+        // or Voice can end up with either aosl at lib/<abi>/libaosl.so depending on native-library
+        // merge order, and RtcEngine.Create() returns null silently when the older one wins.
+        var staleAosl = rtmAarArchive.Entries
+            .Where(e => e.FullName.StartsWith("jni/", StringComparison.Ordinal) && e.Name == "libaosl.so")
+            .ToList();
+        Assert.True(
+            staleAosl.Count == 0,
+            $"{packageId}'s agora-rtm .aar for {tfm} still bundles its own libaosl.so " +
+            $"({string.Join(", ", staleAosl.Select(e => e.FullName))}) — the native-library " +
+            "version conflict AgoraStripNativeLibraryEntries strips this to prevent would reintroduce itself.");
+    }
+
+    [Theory]
+    [MemberData(nameof(Packages.SignalingPackageFrameworks), MemberType = typeof(Packages))]
+    public void Signaling_package_ships_the_same_aosl_version_as_the_rtc_bindings(string packageId, string tfm)
+    {
+        using var signaling = Packages.OpenPackage(packageId);
+        using var video = Packages.OpenPackage(Packages.Video);
+
+        var signalingAosl = signaling.Entries.SingleOrDefault(e =>
+            e.FullName.StartsWith($"lib/{tfm}/", StringComparison.Ordinal)
+            && e.Name.StartsWith("aosl-", StringComparison.Ordinal));
+        var videoAosl = video.Entries.SingleOrDefault(e =>
+            e.FullName.StartsWith($"lib/{tfm}/", StringComparison.Ordinal)
+            && e.Name.StartsWith("aosl-", StringComparison.Ordinal));
+
+        Assert.True(signalingAosl is not null, $"{packageId} carries no aosl-*.aar for {tfm}.");
+        Assert.True(videoAosl is not null, $"{Packages.Video} carries no aosl-*.aar for {tfm}.");
+
+        // Directory.Build.props pins AgoraAoslVersion separately from AgoraVideoVersion/
+        // AgoraVoiceVersion because nothing ties them together — Video and Voice get aosl
+        // transitively through full-rtc-basic/voice-rtc-basic's own Maven dependency, Signaling
+        // through an explicit pin added purely to fix the stale-copy bug above. A version bump to
+        // either line that is not re-checked against the other would silently reintroduce the
+        // exact conflict AgoraStripNativeLibraryEntries exists to prevent — this is the check
+        // Directory.Build.props's AgoraAoslVersion comment promises.
+        Assert.Equal(videoAosl!.Name, signalingAosl!.Name);
+    }
+
+    [Theory]
     [MemberData(nameof(Packages.ProguardPackageIds), MemberType = typeof(Packages))]
     public void Package_ships_r8_keep_rules_when_its_aar_has_none(string packageId)
     {

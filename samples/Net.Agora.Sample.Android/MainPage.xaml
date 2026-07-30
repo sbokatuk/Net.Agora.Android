@@ -5,7 +5,7 @@
              x:Class="Net.Agora.Sample.Android.MainPage"
              Title="Net.Agora">
 
-    <Grid Padding="24" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+    <Grid Padding="24" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
 
         <Label Grid.Row="0"
                Text="Agora Video for .NET Android"
@@ -21,7 +21,13 @@
                x:Name="AppIdEntry"
                Placeholder="Agora App ID" />
 
-        <HorizontalStackLayout Grid.Row="3" Spacing="12">
+        <!-- Optional (see the class doc): blank, Start preview just stands the engine up. -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Entry x:Name="ChannelEntry" Placeholder="Channel" />
+            <Entry x:Name="TokenEntry" Grid.Column="1" Placeholder="Channel token" />
+        </Grid>
+
+        <HorizontalStackLayout Grid.Row="4" Spacing="12">
             <Button x:Name="StartButton"
                     Text="Start preview"
                     Clicked="OnStartPreviewClicked" />
@@ -33,16 +39,18 @@
                     Text="Flip"
                     IsEnabled="False"
                     Clicked="OnFlipClicked" />
-            <Button x:Name="SignalingButton"
-                    Text="Try Signaling"
-                    Clicked="OnSignalingClicked" />
         </HorizontalStackLayout>
 
-        <!-- The SurfaceView Agora renders the local camera into - see AgoraVideoView.cs. -->
-        <local:AgoraVideoView Grid.Row="4"
-                              x:Name="LocalView" />
+        <!--
+          Both views exist for the whole session: creating one on demand would mean creating a
+          native SurfaceView mid-layout, which the SDK does not expect — see AgoraVideoView.cs.
+        -->
+        <Grid Grid.Row="5" ColumnDefinitions="*,*" ColumnSpacing="8">
+            <local:AgoraVideoView x:Name="LocalView" Grid.Column="0" />
+            <local:AgoraVideoView x:Name="RemoteView" Grid.Column="1" />
+        </Grid>
 
-        <Label Grid.Row="5"
+        <Label Grid.Row="6"
                x:Name="ActivityLabel"
                FontSize="12"
                TextColor="Gray" />

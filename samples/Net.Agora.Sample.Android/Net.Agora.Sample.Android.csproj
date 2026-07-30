@@ -47,7 +47,6 @@
       works; override with -p:AgoraVideoPackageVersion=... to test a specific build.
     -->
     <AgoraVideoPackageVersion Condition=" '$(AgoraVideoPackageVersion)' == '' ">$(AgoraVideoVersion).$(AgoraVideoBindingRevision)</AgoraVideoPackageVersion>
-    <AgoraSignalingPackageVersion Condition=" '$(AgoraSignalingPackageVersion)' == '' ">$(AgoraSignalingVersion).$(AgoraSignalingBindingRevision)</AgoraSignalingPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -59,11 +58,6 @@
       artifacts/ would silently resolve from nuget.org instead of failing the restore.
     -->
     <PackageReference Include="Net.Agora.Video.Android" Version="[$(AgoraVideoPackageVersion)]" />
-    <!--
-      Signaling coexists with an RTC package in one app (different Java packages, different
-      native libraries) — referencing both here is the compile-time proof.
-    -->
-    <PackageReference Include="Net.Agora.Signaling.Android" Version="[$(AgoraSignalingPackageVersion)]" />
   </ItemGroup>
 
 </Project>

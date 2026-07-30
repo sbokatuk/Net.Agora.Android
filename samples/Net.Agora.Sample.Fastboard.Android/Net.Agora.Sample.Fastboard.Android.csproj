@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MAUI sample that drives Fastboard directly against the raw binding —
+    Agora.Fastboard.Fastboard/FastRoom, no cross-platform façade. The wrapped, cross-platform
+    version is Net.Agora/samples/Net.Agora.Sample.Fastboard: https://github.com/sbokatuk/Net.Agora.
+    What this one shows is the SDK's own surface: an Agora.Fastboard.FastboardView the app creates,
+    and Fastboard's toolbar drawn onto it for free.
+
+    Consumes the packed Net.Agora.Fastboard.Android package from artifacts/ (see NuGet.config), so
+    it exercises the package exactly as a MAUI consumer would.
+
+    One target framework, net10.0-android36.0, like the other raw-binding samples here: a compile
+    check on the public API plus a runnable demo, and one MAUI head is enough for both. Building
+    this needs the .NET 10 SDK, which the repository's global.json does not select — see the
+    README.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.0</TargetFramework>
+
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Net.Agora.Sample.Fastboard.Android</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <CheckEolWorkloads>false</CheckEolWorkloads>
+
+    <ApplicationTitle>Net.Agora Fastboard Sample</ApplicationTitle>
+    <ApplicationId>com.sbokatuk.agora.sample.fastboard</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+    <MauiFont Include="Resources\Fonts\*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      Defaults to the version in Directory.Build.props so a plain build after "build/BuildNugets.sh"
+      works; override with -p:AgoraFastboardPackageVersion=... to test a specific build.
+    -->
+    <AgoraFastboardPackageVersion Condition=" '$(AgoraFastboardPackageVersion)' == '' ">$(AgoraFastboardVersion).$(AgoraFastboardBindingRevision)</AgoraFastboardPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
+
+    <!--
+      Exact version, in brackets — a bare version is a *minimum* to NuGet, so a build missing from
+      artifacts/ would silently resolve from nuget.org instead of failing the restore.
+    -->
+    <PackageReference Include="Net.Agora.Fastboard.Android" Version="[$(AgoraFastboardPackageVersion)]" />
+  </ItemGroup>
+
+</Project>

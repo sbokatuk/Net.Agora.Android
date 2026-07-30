@@ -4,20 +4,41 @@
     <AgoraPackageName>Signaling</AgoraPackageName>
     <!--
       io.agora:agora-rtm is Agora's Signaling (RTM 2.x) SDK — a different product from the RTC
-      bindings in this repository, on its own native version line (2.2.x). Unlike the RTC
-      artifacts it is self-contained: libaosl.so ships inside the .aar's jni/ directory, so there
-      is no separate infra dependency to carry.
+      bindings in this repository, on its own native version line (2.2.x).
 
-      This package coexists with either RTC package in one app — different Java packages
-      (io.agora.rtm vs io.agora.rtc2), different native libraries.
+      Its own .pom declares no dependencies at all: rather than depending on io.agora.infra:aosl
+      the way the RTC artifacts properly do, it vendors its own (older) copy of libaosl.so
+      directly inside the .aar's jni/ directory — see AgoraStripAarFileName below for why that
+      copy does not ship.
     -->
     <AgoraGroupId>io.agora</AgoraGroupId>
     <AgoraArtifact>agora-rtm</AgoraArtifact>
     <AgoraNativeVersion>$(AgoraSignalingVersion)</AgoraNativeVersion>
     <VersionPrefix>$(AgoraSignalingVersion).$(AgoraSignalingBindingRevision)</VersionPrefix>
+
+    <!--
+      Strips agora-rtm's own vendored libaosl.so — see AgoraStripNativeLibraryEntries in
+      ../Agora.Binding.props, and the AgoraAoslVersion comment in Directory.Build.props for why:
+      that copy is missing symbols (aosl_ref_magic and friends) the RTC engine needs, and without
+      this, an app that also references Video or Voice ends up with whichever aosl the native
+      library merge happens to keep — silently, and not always the working one. Fixed by shipping
+      the same io.agora.infra:aosl dependency the RTC artifacts use (below) with agora-rtm's own
+      stale copy removed, so exactly one, compatible aosl ever ships from this package.
+    -->
+    <AgoraStripAarFileName>agora-rtm-$(AgoraSignalingVersion).aar</AgoraStripAarFileName>
+    <AgoraStripAarEntries>"jni/*/libaosl.so"</AgoraStripAarEntries>
   </PropertyGroup>
 
   <Import Project="../Agora.Binding.props" />
+
+  <!--
+    The proper Maven dependency agora-rtm's own .pom should have declared — see
+    AgoraStripAarFileName above. Bind="false": this is the native infra payload only, nothing to
+    generate a binding from (same as the RTC bindings' own aosl reference).
+  -->
+  <ItemGroup>
+    <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="$(AgoraAoslVersion)" Bind="false" />
+  </ItemGroup>
 
   <!--
     The Java package is io.agora.rtm. Renamed to Agora.Rtm, which is the namespace Agora's own

@@ -27,6 +27,25 @@
     <AgoraSignalingVersion>2.2.6</AgoraSignalingVersion>
     <AgoraSignalingBindingRevision>2</AgoraSignalingBindingRevision>
     <!--
+      io.agora:agora-rtm's own .pom declares no dependencies at all, unlike io.agora.rtc's RTC
+      artifacts: rather than depending on io.agora.infra:aosl the proper Maven way, it vendors its
+      own (older) copy of libaosl.so directly inside its .aar's jni/ directory. That copy is
+      missing symbols (aosl_ref_magic and friends) the RTC engine's libagora-rtc-sdk.so needs, so
+      an app referencing both Video/Voice and Signaling can end up with either aosl at
+      lib/<abi>/libaosl.so depending on native-library merge order — and RtcEngine.Create()
+      returns null silently when the older one wins. See
+      Net.Agora.Signaling.Android.csproj (AgoraStripAarFileName) for the fix: Signaling now also
+      takes an explicit io.agora.infra:aosl dependency at this same version, with agora-rtm's own
+      stale copy stripped from the packed .aar so only one, compatible aosl ever ships.
+
+      Pinned separately from AgoraVideoVersion/AgoraVoiceVersion above because nothing ties this
+      version to theirs — it merely happens to match today (verified against both RTC pods' own
+      .pom files). Bumping either RTC version means re-checking this pin too; a mismatch here
+      would silently reintroduce the exact bug this fixes, so
+      tests/Net.Agora.Android.PackageTests/PackageLayoutTests.cs asserts the two match.
+    -->
+    <AgoraAoslVersion>1.3.5</AgoraAoslVersion>
+    <!--
       Chat is a third product on a third native line — 1.4.x. It is the rebranded Easemob/Hyphenate
       IM SDK, which is why its Java classes carry EM-prefixed names in places and its iOS podspec
       still declares a Hyphenate copyright; the Maven artifact and the package namespace are

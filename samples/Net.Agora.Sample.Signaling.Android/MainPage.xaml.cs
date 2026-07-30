@@ -62,10 +62,13 @@ public partial class MainPage : ContentPage
             _client.ConnectionStateChanged += (_, change) => Append($"connection: {change.State}");
             _client.TokenPrivilegeWillExpire += (_, _) => Append("token expires soon — renew it");
 
-            // An App ID-only project logs in with the App ID as the token. Awaited straight
-            // through: the Task completes when the SDK's ResultCallback fires, and a failure
-            // arrives as RtmOperationException in the catch below.
-            await _client.LoginAsync(appId);
+            // Falls back to the App ID as the token when the field is left blank — an
+            // App-Certificate-less (testing) project accepts that; a real project rejects it with
+            // "Invalid token", which is exactly what a real RTM token (TokenEntry) is for. Awaited
+            // straight through: the Task completes when the SDK's ResultCallback fires, and a
+            // failure arrives as RtmOperationException in the catch below.
+            var token = TokenEntry.Text?.Trim();
+            await _client.LoginAsync(string.IsNullOrEmpty(token) ? appId : token);
             await _client.SubscribeAsync(channel);
 
             Append($"logged in and subscribed to {channel}");
