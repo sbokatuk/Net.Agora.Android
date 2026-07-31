@@ -67,6 +67,17 @@ trap 'rm -rf "${SDK_DIR}"' EXIT
 printf '{ "sdk": { "version": "%s", "rollForward": "latestFeature" } }\n' "${sdk_version}" \
     > "${SDK_DIR}/global.json"
 
+# Signaling's own version, for the AGORA_WITH_SIGNALING run below — resolved here because the
+# cache purge needs it too. The products sit on independent version lines, so VERSION (the chosen
+# product's) says nothing about Signaling's; only the prerelease suffix carries across, and it has
+# to, since a pull request packs every package as <version>-beta.<pr>.<run> and an exact-version
+# PackageReference would otherwise ask for one that is not in ./artifacts.
+. "${REPO_ROOT}/build/pins.sh"
+case "${VERSION}" in
+    *-*) SIGNALING_VERSION="${AGORA_SIGNALING_PACKAGE_VERSION}-${VERSION#*-}" ;;
+    *)   SIGNALING_VERSION="${AGORA_SIGNALING_PACKAGE_VERSION}" ;;
+esac
+
 # NuGet caches by package id + version, so rebuilding a version that was already restored once
 # silently reuses the stale copy. CI versions are unique, but locally you will re-pack the same
 # version repeatedly and test yesterday's bits without this. Driven by packages.tsv so a package
@@ -76,6 +87,11 @@ while IFS=$'\t' read -r name _rest; do
     lower="$(printf '%s' "${name}" | tr '[:upper:]' '[:lower:]')"
     rm -rf "${HOME}/.nuget/packages/net.agora.${lower}.android/${VERSION}"
 done < "${REPO_ROOT}/build/packages.tsv"
+
+# And Signaling at its own version, which the loop above cannot reach: it keys every package id on
+# VERSION, on the old assumption that an app holds one product. Only matters locally — CI versions
+# are unique — but locally it is the difference between testing this pack and yesterday's.
+rm -rf "${HOME}/.nuget/packages/net.agora.signaling.android/${SIGNALING_VERSION}"
 
 rm -rf "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/obj" \
        "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/bin"
@@ -95,10 +111,8 @@ fi
 # two apart. See the .csproj comment.
 COEXIST_ARGS=()
 if [ "${AGORA_WITH_SIGNALING:-0}" = "1" ]; then
-    . "${REPO_ROOT}/build/pins.sh"
     COEXIST_ARGS=(-p:AgoraDeviceWithSignaling=true
-                  -p:AgoraSignalingVersion="${AGORA_SIGNALING_VERSION}"
-                  -p:AgoraSignalingBindingRevision="${AGORA_SIGNALING_BINDING_REVISION}")
+                  -p:AgoraSignalingPackageVersion="${SIGNALING_VERSION}")
 fi
 
 echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0}, signaling=${AGORA_WITH_SIGNALING:-0})"
