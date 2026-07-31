@@ -320,7 +320,7 @@ jobs:
             -p:AgoraWhiteboardPackageVersion="${AGORA_WHITEBOARD_PACKAGE_VERSION}${s}"
 
   e2e:
-    name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }}${{ matrix.shrink == 1 && ', shrink' || '' }})
+    name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }}${{ matrix.shrink == 1 && ', shrink' || '' }}${{ matrix.with-signaling == 1 && ', +signaling' || '' }})
     timeout-minutes: 60
     needs: pack
     # Off on a scoped track release — the tag's commit was device-tested on its PR. See validate.
@@ -348,6 +348,7 @@ jobs:
         package: [Video, Voice, Chat, Whiteboard, Fastboard]
         target-framework: ${{ fromJSON(inputs.e2e-target-frameworks) }}
         shrink: [0]
+        with-signaling: [0]
         include:
           # One extra leg with Java shrinking (R8) on — the configuration a store build ships
           # with. Signaling deliberately: agora-rtm ships no proguard.txt inside its .aar, so
@@ -360,6 +361,21 @@ jobs:
           - package: Signaling
             target-framework: net10.0-android36.0
             shrink: 1
+            with-signaling: 0
+          # And one leg that holds Video *and* Signaling at once — the only check anywhere that
+          # the two products actually coexist at runtime. Both ship an aosl native library at the
+          # same path, and until signaling-v2.2.6.3 they shipped different ones: the merge kept
+          # whichever it kept, and when that was agora-rtm's vendored copy RtcEngine.Create()
+          # returned null. Nothing at build time saw it — the app compiled, dexed, packaged and
+          # installed exactly the same either way — which is why the Video sample's old "also
+          # references Signaling" build proved nothing and has been dropped.
+          #
+          # The suite is the plain Video one, unchanged; only the package graph differs. Runs on
+          # net10 alone: this is a native-library merge, and nothing about it varies by TFM band.
+          - package: Video
+            target-framework: net10.0-android36.0
+            shrink: 0
+            with-signaling: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -448,13 +464,13 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: AGORA_SHRINK=${{ matrix.shrink }} ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
+          script: AGORA_SHRINK=${{ matrix.shrink }} AGORA_WITH_SIGNALING=${{ matrix.with-signaling }} ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
 
       - name: Upload emulator logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emulator-test-logs-${{ matrix.package }}-${{ matrix.target-framework }}${{ matrix.shrink == 1 && '-shrink' || '' }}
+          name: emulator-test-logs-${{ matrix.package }}-${{ matrix.target-framework }}${{ matrix.shrink == 1 && '-shrink' || '' }}${{ matrix.with-signaling == 1 && '-signaling' || '' }}
           path: emulator-tests.log
           if-no-files-found: ignore
           retention-days: 7

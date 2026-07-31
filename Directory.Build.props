@@ -25,7 +25,7 @@
       whose versions do not move together.
     -->
     <AgoraSignalingVersion>2.2.6</AgoraSignalingVersion>
-    <AgoraSignalingBindingRevision>2</AgoraSignalingBindingRevision>
+    <AgoraSignalingBindingRevision>3</AgoraSignalingBindingRevision>
     <!--
       io.agora:agora-rtm's own .pom declares no dependencies at all, unlike io.agora.rtc's RTC
       artifacts: rather than depending on io.agora.infra:aosl the proper Maven way, it vendors its

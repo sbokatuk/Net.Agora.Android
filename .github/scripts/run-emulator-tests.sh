@@ -16,6 +16,10 @@ set -euo pipefail
 # tests/Net.Agora.Android.DeviceTests). IoT is not a flavor — it bundles private copies of the RTC
 # and RTM SDKs and so shares an app with nothing.
 #
+# Environment:
+#   AGORA_SHRINK=1          build with Java shrinking (R8) on
+#   AGORA_WITH_SIGNALING=1  also reference Signaling (Video/Voice flavors only)
+#
 # VERSION is that package's own version: the products sit on independent native version lines, so
 # there is no single number that spans them. See build/pins.sh.
 
@@ -84,7 +88,20 @@ if [ "${AGORA_SHRINK:-0}" = "1" ]; then
     SHRINK_ARGS=(-p:AgoraShrinkTest=true)
 fi
 
-echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0})"
+# AGORA_WITH_SIGNALING=1 additionally references Net.Agora.Signaling.Android, at its own pin from
+# build/pins.sh, without changing which suite compiles. Valid on the Video and Voice flavors only.
+# This is the regression test for the aosl conflict signaling-v2.2.6.3 fixes: the app builds and
+# installs identically either way, and only the engine-creation check on a real device tells the
+# two apart. See the .csproj comment.
+COEXIST_ARGS=()
+if [ "${AGORA_WITH_SIGNALING:-0}" = "1" ]; then
+    . "${REPO_ROOT}/build/pins.sh"
+    COEXIST_ARGS=(-p:AgoraDeviceWithSignaling=true
+                  -p:AgoraSignalingVersion="${AGORA_SIGNALING_VERSION}"
+                  -p:AgoraSignalingBindingRevision="${AGORA_SIGNALING_BINDING_REVISION}")
+fi
+
+echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0}, signaling=${AGORA_WITH_SIGNALING:-0})"
 # Debug, not Release. Release AOT-compiles every assembly, and an AOT image built against an
 # unlinked assembly set disagrees with what the runtime loads - the app aborts on startup before a
 # single check runs. Debug also skips the R8 shrinking this app avoids by default - see the
@@ -96,6 +113,7 @@ echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=$
     -p:AgoraDeviceTargetFramework="${TARGET_FRAMEWORK}" \
     -p:RuntimeIdentifier="${DEVICE_RID}" \
     ${SHRINK_ARGS[@]+"${SHRINK_ARGS[@]}"} \
+    ${COEXIST_ARGS[@]+"${COEXIST_ARGS[@]}"} \
     -t:Install )
 
 echo "==> granting camera/microphone permissions"
