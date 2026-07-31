@@ -13,7 +13,7 @@ Seven products are bound, from `net8.0-android` through `net10.0-android`:
 | --- | --- | --- |
 | `Net.Agora.Video.Android` | [`io.agora.rtc:full-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic) | The app shows or sends video (also carries the full audio surface). |
 | `Net.Agora.Voice.Android` | [`io.agora.rtc:voice-rtc-basic`](https://central.sonatype.com/artifact/io.agora.rtc/voice-rtc-basic) | Audio only — the same engine built without the video pipeline, a ~20 MB smaller `.aar`. |
-| `Net.Agora.Signaling.Android` | [`io.agora:agora-rtm`](https://central.sonatype.com/artifact/io.agora/agora-rtm) | Realtime messaging (Signaling / RTM 2.x, its own 2.2.x version line) — coexists with either RTC package. |
+| `Net.Agora.Signaling.Android` | [`io.agora:agora-rtm`](https://central.sonatype.com/artifact/io.agora/agora-rtm) | Realtime messaging (Signaling / RTM 2.x, its own 2.2.x version line) — coexists with either RTC package **from 2.2.6.3**; earlier versions break `RtcEngine.Create()` in an app that also references one (see the 2.2.6.3 release note). |
 | `Net.Agora.Chat.Android` | [`io.agora.rtc:chat-sdk`](https://central.sonatype.com/artifact/io.agora.rtc/chat-sdk) | Persistent messaging (Chat / IM 1.x, its own version line) — coexists with everything else here. |
 | `Net.Agora.Whiteboard.Android` | [`com.github.netless-io:whiteboard-android`](https://jitpack.io/#netless-io/whiteboard-android) | The Interactive Whiteboard (2.16.x). A WebView SDK from JitPack, not Maven Central — it carries no native code, so it coexists with everything else here. |
 | `Net.Agora.Fastboard.Android` | [`com.github.netless-io:fastboard-android`](https://jitpack.io/#netless-io/fastboard-android) | netless's ready-made UI over the whiteboard (1.8.x) — a board with a working toolbar rather than a bare canvas. Depends on the row above. |
@@ -135,7 +135,9 @@ since a single app can hold only one — on `net8.0-android34.0` and `net10.0-an
 extremes: net8's `.aar` arrives through the `DownloadFile` fallback, and net10's assets are grafted
 in by the merge step, so those are the two that could each break alone. Signaling gets one leg of
 its own with Java shrinking (R8) turned on, which is where the keep rules the packages ship in
-`buildTransitive/` are exercised. The `sample` job additionally links every sample that exists here
+`buildTransitive/` are exercised, and one more leg holds **Video and Signaling in the same app** —
+the only check anywhere that the two products coexist at runtime, and the regression test for the
+conflict `signaling-v2.2.6.3` fixes. The `sample` job additionally links every sample that exists here
 for `android-arm64` in Release — trimmed, AOT-compiled, R8-shrunk and packaged into a signed APK —
 which is the only check in the repository that covers the configuration a shipping app is built in.
 
@@ -154,11 +156,10 @@ export AGORA_DEVICE_RID=android-arm64          # an arm64 emulator, e.g. on Appl
 ## Sample
 
 `samples/Net.Agora.Sample.Android` is a MAUI app built straight against the packages — no
-cross-platform façade — that creates `Agora.Rtc.RtcEngine` and shows the local camera preview
-with a front/back flip: an App ID entry, camera/microphone permission handling, and a
-`SurfaceView` behind a small MAUI handler (see its `AgoraVideoView.cs` for why a custom handler
-rather than a wrapped view). Its **Try Signaling** button drives `Agora.Rtm.RtmClient` from the
-same app — the coexistence of the two products, proven at dex-merge time just by building.
+cross-platform façade — that creates `Agora.Rtc.RtcEngine`, joins a channel and renders the first
+remote user's video into a second view next to the local preview: an App ID entry, an optional
+channel/token pair, camera/microphone permission handling, and a `SurfaceView` behind a small MAUI
+handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrapped view).
 
 `samples/Net.Agora.Sample.Voice.Android` is its audio-only sibling against
 `Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
@@ -167,6 +168,22 @@ reports, with no camera permission anywhere.
 `samples/Net.Agora.Sample.Signaling.Android` drives `Agora.Rtm.RtmClient` on its own — a tiny chat
 room (log in, subscribe, publish, receive) written against the raw callback API, to show what the
 façade hides.
+
+`samples/Net.Agora.Sample.Chat.Android` drives `Agora.Chat.ChatClient` on its own — the same tiny
+two-user chat shape as Signaling's sample, against `IO.Agora.ICallBack` rather than an [Async]
+counterpart, because that is what this binding generates: unlike Signaling and Voice, nothing here
+is hand-wrapped into Task-returning Additions. Incoming messages still arrive as an ordinary .NET
+event, `ChatManager.MessageReceived`.
+
+`samples/Net.Agora.Sample.Fastboard.Android` drives `Agora.Fastboard.Fastboard`/`FastRoom` on its
+own: an `Agora.Fastboard.FastboardView` the app creates and hands to the SDK, which draws its own
+toolbar on top — join, read-only toggle, and driving the board from code (a red pencil) alongside
+that toolbar.
+
+`samples/Net.Agora.Sample.Whiteboard.Android` drives `Agora.Whiteboard.WhiteSdk`/`Room` on its
+own: an `Agora.Whiteboard.WhiteboardView` the app creates, joined through netless's own
+`IPromise` shape rather than an awaitable Task, with a hand-rolled toolbar (pencil, eraser,
+undo/redo, clear) since — unlike Fastboard — the plain SDK draws nothing of its own.
 
 The full join/publish/subscribe flows, wrapped behind one cross-platform API, are
 [`Net.Agora`](https://github.com/sbokatuk/Net.Agora)'s samples.

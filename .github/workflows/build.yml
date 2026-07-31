@@ -210,9 +210,9 @@ jobs:
       - name: Build the samples against the packed packages
         run: |
           # Exact versions come from the pins plus the optional prerelease suffix — see
-          # build/pins.sh. The Video sample also consumes the Signaling package (the coexistence
-          # proof); the Voice sample is its own app, since the two RTC packages cannot share one,
-          # and so is the IoT sample, which cannot share an app with any of them.
+          # build/pins.sh. The Voice sample is its own app, since the two RTC packages cannot
+          # share one, and so is the IoT sample, which cannot share an app with any of them. Chat,
+          # Fastboard and Whiteboard are each their own app too, one Java SDK apiece.
           . ./build/pins.sh
           s="${{ inputs.suffix != '' && format('-{0}', inputs.suffix) || '' }}"
           # From the same scratch directory the workload was installed into, for the same reason:
@@ -221,7 +221,6 @@ jobs:
             && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Android/Net.Agora.Sample.Android.csproj" \
                  --configuration Release \
                  -p:AgoraVideoPackageVersion="${AGORA_VIDEO_PACKAGE_VERSION}${s}" \
-                 -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" \
             && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Voice.Android/Net.Agora.Sample.Voice.Android.csproj" \
                  --configuration Release \
                  -p:AgoraVoicePackageVersion="${AGORA_VOICE_PACKAGE_VERSION}${s}" \
@@ -230,7 +229,16 @@ jobs:
                  -p:AgoraIoTPackageVersion="${AGORA_IOT_PACKAGE_VERSION}${s}" \
             && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Signaling.Android/Net.Agora.Sample.Signaling.Android.csproj" \
                  --configuration Release \
-                 -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" )
+                 -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}" \
+            && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Chat.Android/Net.Agora.Sample.Chat.Android.csproj" \
+                 --configuration Release \
+                 -p:AgoraChatPackageVersion="${AGORA_CHAT_PACKAGE_VERSION}${s}" \
+            && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Fastboard.Android/Net.Agora.Sample.Fastboard.Android.csproj" \
+                 --configuration Release \
+                 -p:AgoraFastboardPackageVersion="${AGORA_FASTBOARD_PACKAGE_VERSION}${s}" \
+            && dotnet build "${GITHUB_WORKSPACE}/samples/Net.Agora.Sample.Whiteboard.Android/Net.Agora.Sample.Whiteboard.Android.csproj" \
+                 --configuration Release \
+                 -p:AgoraWhiteboardPackageVersion="${AGORA_WHITEBOARD_PACKAGE_VERSION}${s}" )
 
       # What this proves that nothing else here does: that the packages survive being *linked for a
       # device*. Every other check in this repository builds either without a RuntimeIdentifier (the
@@ -257,9 +265,7 @@ jobs:
       # asserted is that the packaging and signing pipeline ran to completion, not that the result is
       # publishable.
       #
-      # One sample per product that has one here. Chat, Whiteboard and Fastboard have no sample in
-      # this repository (theirs live in the facade repository), so for those three the Release+RID
-      # configuration is not covered — their device legs build in Debug like every other leg.
+      # One sample per product that has one here.
       - name: Link the samples for a device in Release
         run: |
           . ./build/pins.sh
@@ -299,17 +305,22 @@ jobs:
           # therefore the workload set — is resolved from the working directory.
           cd "${RUNNER_TEMP}/sample-sdk"
           link Net.Agora.Sample.Android \
-            -p:AgoraVideoPackageVersion="${AGORA_VIDEO_PACKAGE_VERSION}${s}" \
-            -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}"
+            -p:AgoraVideoPackageVersion="${AGORA_VIDEO_PACKAGE_VERSION}${s}"
           link Net.Agora.Sample.Voice.Android \
             -p:AgoraVoicePackageVersion="${AGORA_VOICE_PACKAGE_VERSION}${s}"
           link Net.Agora.Sample.IoT.Android \
             -p:AgoraIoTPackageVersion="${AGORA_IOT_PACKAGE_VERSION}${s}"
           link Net.Agora.Sample.Signaling.Android \
             -p:AgoraSignalingPackageVersion="${AGORA_SIGNALING_PACKAGE_VERSION}${s}"
+          link Net.Agora.Sample.Chat.Android \
+            -p:AgoraChatPackageVersion="${AGORA_CHAT_PACKAGE_VERSION}${s}"
+          link Net.Agora.Sample.Fastboard.Android \
+            -p:AgoraFastboardPackageVersion="${AGORA_FASTBOARD_PACKAGE_VERSION}${s}"
+          link Net.Agora.Sample.Whiteboard.Android \
+            -p:AgoraWhiteboardPackageVersion="${AGORA_WHITEBOARD_PACKAGE_VERSION}${s}"
 
   e2e:
-    name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }}${{ matrix.shrink == 1 && ', shrink' || '' }})
+    name: emulator smoke test (${{ matrix.package }}, ${{ matrix.target-framework }}${{ matrix.shrink == 1 && ', shrink' || '' }}${{ matrix.with-signaling == 1 && ', +signaling' || '' }})
     timeout-minutes: 60
     needs: pack
     # Off on a scoped track release — the tag's commit was device-tested on its PR. See validate.
@@ -337,6 +348,7 @@ jobs:
         package: [Video, Voice, Chat, Whiteboard, Fastboard]
         target-framework: ${{ fromJSON(inputs.e2e-target-frameworks) }}
         shrink: [0]
+        with-signaling: [0]
         include:
           # One extra leg with Java shrinking (R8) on — the configuration a store build ships
           # with. Signaling deliberately: agora-rtm ships no proguard.txt inside its .aar, so
@@ -349,6 +361,21 @@ jobs:
           - package: Signaling
             target-framework: net10.0-android36.0
             shrink: 1
+            with-signaling: 0
+          # And one leg that holds Video *and* Signaling at once — the only check anywhere that
+          # the two products actually coexist at runtime. Both ship an aosl native library at the
+          # same path, and until signaling-v2.2.6.3 they shipped different ones: the merge kept
+          # whichever it kept, and when that was agora-rtm's vendored copy RtcEngine.Create()
+          # returned null. Nothing at build time saw it — the app compiled, dexed, packaged and
+          # installed exactly the same either way — which is why the Video sample's old "also
+          # references Signaling" build proved nothing and has been dropped.
+          #
+          # The suite is the plain Video one, unchanged; only the package graph differs. Runs on
+          # net10 alone: this is a native-library merge, and nothing about it varies by TFM band.
+          - package: Video
+            target-framework: net10.0-android36.0
+            shrink: 0
+            with-signaling: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -437,13 +464,13 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: AGORA_SHRINK=${{ matrix.shrink }} ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
+          script: AGORA_SHRINK=${{ matrix.shrink }} AGORA_WITH_SIGNALING=${{ matrix.with-signaling }} ./.github/scripts/run-emulator-tests.sh "$AGORA_E2E_VERSION" "${{ matrix.target-framework }}" "${{ matrix.package }}"
 
       - name: Upload emulator logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emulator-test-logs-${{ matrix.package }}-${{ matrix.target-framework }}${{ matrix.shrink == 1 && '-shrink' || '' }}
+          name: emulator-test-logs-${{ matrix.package }}-${{ matrix.target-framework }}${{ matrix.shrink == 1 && '-shrink' || '' }}${{ matrix.with-signaling == 1 && '-signaling' || '' }}
           path: emulator-tests.log
           if-no-files-found: ignore
           retention-days: 7

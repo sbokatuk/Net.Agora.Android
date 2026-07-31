@@ -120,6 +120,45 @@
   </ItemGroup>
 
   <!--
+    -p:AgoraDeviceWithSignaling=true additionally references Signaling, without changing which
+    suite compiles. That combination is the whole point: this is the regression test for the
+    native-library conflict signaling-v2.2.6.3 fixes, where agora-rtm's own vendored libaosl.so
+    could beat the compatible copy Video/Voice ship and RtcEngine.Create() then returned null.
+
+    Nothing about it is visible at build time — the two products are different Java packages and
+    different native libraries, so the app compiled, dexed, packaged and installed perfectly
+    while being broken on the device. Only the Video suite's existing "creates the engine" check,
+    run from an app that holds both packages, notices. Hence no new test code and no new define:
+    the flavor is unchanged, the package graph is not.
+
+    The package layout tests already assert the two ship one, matching aosl. This proves what
+    that cannot — that the merged app actually runs.
+  -->
+  <PropertyGroup Condition=" '$(AgoraSignalingPackageVersion)' == '' ">
+    <!--
+      The pins, for a local run. CI passes this explicitly instead, because a pull request packs
+      every package with a prerelease suffix (-beta.<pr>.<run>) and the pins here carry none — the
+      exact-version reference below would then ask for a package that is not in ./artifacts.
+    -->
+    <AgoraSignalingPackageVersion>$(AgoraSignalingVersion).$(AgoraSignalingBindingRevision)</AgoraSignalingPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(AgoraDeviceWithSignaling)' == 'true' ">
+    <PackageReference Include="Net.Agora.Signaling.Android" Version="[$(AgoraSignalingPackageVersion)]" />
+  </ItemGroup>
+
+  <!--
+    Signaling coexists with Video and Voice, and with nothing else here: IoT bundles private
+    copies of both RTC and RTM, and adding Signaling to the Signaling flavor is a duplicate
+    PackageReference (NU1504). Caught here rather than as whichever of those two errors applies.
+  -->
+  <Target Name="_AgoraValidateDeviceCoexistence" BeforeTargets="BeforeBuild"
+          Condition=" '$(AgoraDeviceWithSignaling)' == 'true' ">
+    <Error Condition=" '$(AgoraDevicePackage)' != 'Video' And '$(AgoraDevicePackage)' != 'Voice' "
+           Text="AgoraDeviceWithSignaling=true is only meaningful for the Video and Voice flavors (the RTC packages Signaling shares an aosl with), not '$(AgoraDevicePackage)'." />
+  </Target>
+
+  <!--
     Fastboard only. Its transitive graph asks for two mutually-exclusive
     Xamarin.AndroidX.Lifecycle.Common ranges and NuGet cannot unify them, so restore fails outright
     with NU1107 before anything builds:

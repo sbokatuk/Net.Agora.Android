@@ -16,6 +16,10 @@ set -euo pipefail
 # tests/Net.Agora.Android.DeviceTests). IoT is not a flavor — it bundles private copies of the RTC
 # and RTM SDKs and so shares an app with nothing.
 #
+# Environment:
+#   AGORA_SHRINK=1          build with Java shrinking (R8) on
+#   AGORA_WITH_SIGNALING=1  also reference Signaling (Video/Voice flavors only)
+#
 # VERSION is that package's own version: the products sit on independent native version lines, so
 # there is no single number that spans them. See build/pins.sh.
 
@@ -63,6 +67,17 @@ trap 'rm -rf "${SDK_DIR}"' EXIT
 printf '{ "sdk": { "version": "%s", "rollForward": "latestFeature" } }\n' "${sdk_version}" \
     > "${SDK_DIR}/global.json"
 
+# Signaling's own version, for the AGORA_WITH_SIGNALING run below — resolved here because the
+# cache purge needs it too. The products sit on independent version lines, so VERSION (the chosen
+# product's) says nothing about Signaling's; only the prerelease suffix carries across, and it has
+# to, since a pull request packs every package as <version>-beta.<pr>.<run> and an exact-version
+# PackageReference would otherwise ask for one that is not in ./artifacts.
+. "${REPO_ROOT}/build/pins.sh"
+case "${VERSION}" in
+    *-*) SIGNALING_VERSION="${AGORA_SIGNALING_PACKAGE_VERSION}-${VERSION#*-}" ;;
+    *)   SIGNALING_VERSION="${AGORA_SIGNALING_PACKAGE_VERSION}" ;;
+esac
+
 # NuGet caches by package id + version, so rebuilding a version that was already restored once
 # silently reuses the stale copy. CI versions are unique, but locally you will re-pack the same
 # version repeatedly and test yesterday's bits without this. Driven by packages.tsv so a package
@@ -72,6 +87,11 @@ while IFS=$'\t' read -r name _rest; do
     lower="$(printf '%s' "${name}" | tr '[:upper:]' '[:lower:]')"
     rm -rf "${HOME}/.nuget/packages/net.agora.${lower}.android/${VERSION}"
 done < "${REPO_ROOT}/build/packages.tsv"
+
+# And Signaling at its own version, which the loop above cannot reach: it keys every package id on
+# VERSION, on the old assumption that an app holds one product. Only matters locally — CI versions
+# are unique — but locally it is the difference between testing this pack and yesterday's.
+rm -rf "${HOME}/.nuget/packages/net.agora.signaling.android/${SIGNALING_VERSION}"
 
 rm -rf "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/obj" \
        "${REPO_ROOT}/tests/Net.Agora.Android.DeviceTests/bin"
@@ -84,7 +104,18 @@ if [ "${AGORA_SHRINK:-0}" = "1" ]; then
     SHRINK_ARGS=(-p:AgoraShrinkTest=true)
 fi
 
-echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0})"
+# AGORA_WITH_SIGNALING=1 additionally references Net.Agora.Signaling.Android, at its own pin from
+# build/pins.sh, without changing which suite compiles. Valid on the Video and Voice flavors only.
+# This is the regression test for the aosl conflict signaling-v2.2.6.3 fixes: the app builds and
+# installs identically either way, and only the engine-creation check on a real device tells the
+# two apart. See the .csproj comment.
+COEXIST_ARGS=()
+if [ "${AGORA_WITH_SIGNALING:-0}" = "1" ]; then
+    COEXIST_ARGS=(-p:AgoraDeviceWithSignaling=true
+                  -p:AgoraSignalingPackageVersion="${SIGNALING_VERSION}")
+fi
+
+echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=${VERSION}, tfm=${TARGET_FRAMEWORK}, sdk=${sdk_version}, shrink=${AGORA_SHRINK:-0}, signaling=${AGORA_WITH_SIGNALING:-0})"
 # Debug, not Release. Release AOT-compiles every assembly, and an AOT image built against an
 # unlinked assembly set disagrees with what the runtime loads - the app aborts on startup before a
 # single check runs. Debug also skips the R8 shrinking this app avoids by default - see the
@@ -96,6 +127,7 @@ echo "==> building device tests (package=Net.Agora.${PACKAGE}.Android, version=$
     -p:AgoraDeviceTargetFramework="${TARGET_FRAMEWORK}" \
     -p:RuntimeIdentifier="${DEVICE_RID}" \
     ${SHRINK_ARGS[@]+"${SHRINK_ARGS[@]}"} \
+    ${COEXIST_ARGS[@]+"${COEXIST_ARGS[@]}"} \
     -t:Install )
 
 echo "==> granting camera/microphone permissions"

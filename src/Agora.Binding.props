@@ -276,4 +276,87 @@
     </ItemGroup>
   </Target>
 
+  <!--
+    Strip specific entries out of a referenced *third-party* .aar before it is packed — for a
+    companion artifact that vendors its own stale copy of a native library another artifact in the
+    same package also carries at a newer, incompatible version.
+
+    Sibling case to AgoraRemoveDuplicateProjectAar above, one level up: that one drops a project's
+    own generated .aar where it only repeats a companion artifact's payload; this one edits a
+    *companion* artifact itself, where it duplicates another companion artifact's payload under
+    the same jni/<abi>/<name>.so path. Both exist because _ResolveAars globs every .aar out of a
+    referenced package indiscriminately — a consuming app has no way to prefer one copy over the
+    other, so the wrong one wins exactly as often as the right one does.
+
+    A project sets both properties to use this:
+
+      <AgoraStripAarFileName>agora-rtm-2.2.6.aar</AgoraStripAarFileName>
+      <AgoraStripAarEntries>"jni/*/libaosl.so"</AgoraStripAarEntries>
+
+    AgoraStripAarFileName must match one @(None) item's file name exactly — that is where a
+    Maven-resolved third-party .aar first becomes pack-bound. _CategorizeAndroidLibraries (in the
+    Android workload's Xamarin.Android.AvailableItems.targets) is what converts every @(AndroidLibrary)
+    with a .aar extension into a @(None) item carrying TfmSpecificPackageFile="%(AndroidLibrary.Pack)";
+    that conversion is unconditional on Bind, so it catches Bind="false" infra payloads (like aosl)
+    exactly the same as the library actually being bound (agora-rtm itself). _IncludeAarInNuGetPackage
+    only folds @(None) items already tagged TfmSpecificPackageFile="true" into the pack — by then the
+    file name has already been decided, so this target has to run at or before that point, hence
+    AfterTargets="_CategorizeAndroidLibraries" rather than "_IncludeAarInNuGetPackage": the latter
+    only ever sees this project's own generated .aar (Agora.Binding.props's own
+    AgoraRemoveDuplicateProjectAar target above), never a third-party Maven one — confirmed by
+    dumping @(TfmSpecificPackageFile) at that point and finding Maven aars simply absent from it.
+    AgoraStripAarEntries is passed to `zip -d` as-is, so multiple patterns are space-separated
+    (each individually quoted, as above) the same way they would be on its own command line.
+
+    ->Distinct() below: on the net8.0-android34.0 (legacy) band specifically, this same target's
+    own second None-producing line — <None Include="@(LibraryProjectZip)" Exclude="@(AndroidLibrary)" />
+    — fails to exclude a Bind="true" .aar (agora-rtm itself) from @(LibraryProjectZip) even though
+    it is also in @(AndroidLibrary), so that file's @(None) item is added twice with otherwise
+    identical metadata (confirmed via diagnostic-verbosity build log). Both copies share the same
+    Identity, so Distinct() collapses them back to one; net9.0+ does not hit this, since
+    Xamarin.Android.AvailableItems.targets dropped that second None line entirely.
+  -->
+  <Target Name="AgoraStripNativeLibraryEntries"
+          AfterTargets="_CategorizeAndroidLibraries"
+          Condition=" '$(AgoraStripAarFileName)' != '' ">
+    <ItemGroup>
+      <_AgoraAarToStripAll Include="@(None)"
+                        Condition=" '%(FileName)%(Extension)' == '$(AgoraStripAarFileName)' and '%(None.TfmSpecificPackageFile)' == 'true' " />
+      <_AgoraAarToStrip Include="@(_AgoraAarToStripAll->Distinct())" />
+    </ItemGroup>
+
+    <!--
+      Fails loudly rather than silently packing the untouched (conflicting) original: a version
+      bump that changes the Maven file name (e.g. a new AgoraSignalingVersion) would otherwise
+      reintroduce the exact bug this target fixes, with nothing in the build log to say so.
+    -->
+    <Error Condition=" '@(_AgoraAarToStrip)' == '' "
+           Text="AgoraStripAarFileName is '$(AgoraStripAarFileName)', which is not among the .aar files this project is packing. Did the Maven artifact or its version change?" />
+
+    <PropertyGroup>
+      <_AgoraStrippedAarDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(IntermediateOutputPath)'))stripped/</_AgoraStrippedAarDirectory>
+      <_AgoraStrippedAar>$(_AgoraStrippedAarDirectory)$(AgoraStripAarFileName)</_AgoraStrippedAar>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_AgoraStrippedAarDirectory)" />
+    <Copy SourceFiles="@(_AgoraAarToStrip)" DestinationFiles="$(_AgoraStrippedAar)" />
+
+    <!-- zip -d deletes every matching entry from the archive in place. -->
+    <Exec Command="zip -d &quot;$(_AgoraStrippedAar)&quot; $(AgoraStripAarEntries)" />
+
+    <ItemGroup>
+      <None Remove="@(_AgoraAarToStrip)" />
+      <!--
+        Same metadata as the item just removed (Link is what _IncludeAarInNuGetPackage's %(Filename)
+        keys off, not the Identity path), so the packed layout (lib/<tfm>/<name>.aar) is unchanged —
+        only that one file's contents are.
+      -->
+      <None Include="$(_AgoraStrippedAar)"
+            TfmSpecificPackageFile="true"
+            Pack="false"
+            CopyToOutputDirectory="PreserveNewest"
+            Link="%(_AgoraAarToStrip.Filename)%(_AgoraAarToStrip.Extension)" />
+    </ItemGroup>
+  </Target>
+
 </Project>
