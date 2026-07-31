@@ -63,6 +63,18 @@ def prop(name):
     return match.group(1) if match else None
 
 
+def resolve(version):
+    """A version as MSBuild would see it: a bare literal, or one $(...) into Directory.Build.props.
+
+    Both the project's own AgoraNativeVersion and its AgoraMavenArtifact rows go through here.
+    They did not always: the extra rows took the attribute literally, which was invisible while
+    every one of them happened to be a literal, and produced a coordinate of
+    'io.agora.infra:aosl:$(AgoraAoslVersion)' — and a 404 — the moment one used a property.
+    """
+    reference = re.fullmatch(r"\$\((\w+)\)", version)
+    return (prop(reference.group(1)) or "") if reference else version
+
+
 for csproj in sorted(root.glob("src/*/*.csproj")):
     text = csproj.read_text()
 
@@ -74,19 +86,16 @@ for csproj in sorted(root.glob("src/*/*.csproj")):
     if not group or not artifact:
         continue
 
-    version = read("AgoraNativeVersion") or ""
-    # AgoraNativeVersion is usually a $(...) reference into Directory.Build.props.
-    reference = re.fullmatch(r"\$\((\w+)\)", version)
-    if reference:
-        version = prop(reference.group(1)) or ""
+    version = resolve(read("AgoraNativeVersion") or "")
     repository = read("AgoraMavenRepository") or "Central"
     print(f"{group}:{artifact}:{version}:{repository}")
 
-    # Extra rows, e.g. <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="1.3.5" />
+    # Extra rows, e.g. <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="$(AgoraAoslVersion)" />
     for extra in re.finditer(
             r'<AgoraMavenArtifact\s+Include="([^:"]+):([^"]+)"\s+Version="([^"]+)"'
             r'(?:[^>]*?Repository="([^"]+)")?', text):
-        print(f"{extra.group(1)}:{extra.group(2)}:{extra.group(3)}:{extra.group(4) or repository}")
+        print(f"{extra.group(1)}:{extra.group(2)}:{resolve(extra.group(3))}:"
+              f"{extra.group(4) or repository}")
 PYEOF
 }
 

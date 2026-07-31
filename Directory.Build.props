@@ -40,9 +40,13 @@
 
       Pinned separately from AgoraVideoVersion/AgoraVoiceVersion above because nothing ties this
       version to theirs — it merely happens to match today (verified against both RTC pods' own
-      .pom files). Bumping either RTC version means re-checking this pin too; a mismatch here
-      would silently reintroduce the exact bug this fixes, so
-      tests/Net.Agora.Android.PackageTests/PackageLayoutTests.cs asserts the two match.
+      .pom files). Bumping either RTC version means re-checking this pin against that release's
+      .pom.
+
+      All three projects that reference aosl — Video, Voice and Signaling — read this one property
+      rather than a literal, which is the point: the bug it exists to prevent is those copies
+      differing, and one property cannot differ from itself. The package tests still assert the
+      packed result, since a project could always stop using it.
     -->
     <AgoraAoslVersion>1.3.5</AgoraAoslVersion>
     <!--

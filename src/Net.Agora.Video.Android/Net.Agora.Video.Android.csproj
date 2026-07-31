@@ -26,9 +26,13 @@
     full-rtc-basic's only dependency, at the version its own POM declares (aosl is versioned
     independently of the RTC SDK — this is not the same as $(AgoraVideoVersion)). Bind="false":
     nothing here calls into it from C#, it only has to be present at runtime.
+
+    $(AgoraAoslVersion) rather than the literal, because Signaling has to ship this exact same
+    aosl — see Directory.Build.props, and Net.Agora.Signaling.Android.csproj for what goes wrong
+    when the two differ. One property is what makes "the same" mechanical rather than a promise.
   -->
   <ItemGroup>
-    <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="1.3.5" Bind="false" />
+    <AgoraMavenArtifact Include="io.agora.infra:aosl" Version="$(AgoraAoslVersion)" Bind="false" />
   </ItemGroup>
 
   <!--
