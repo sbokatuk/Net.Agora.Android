@@ -70,8 +70,8 @@
       rather than Maven Central. Two independent lines — Fastboard is a UI layer over Whiteboard
       and versions separately.
     -->
-    <AgoraWhiteboardVersion>2.16.123</AgoraWhiteboardVersion>
-    <AgoraWhiteboardBindingRevision>2</AgoraWhiteboardBindingRevision>
+    <AgoraWhiteboardVersion>2.16.124</AgoraWhiteboardVersion>
+    <AgoraWhiteboardBindingRevision>1</AgoraWhiteboardBindingRevision>
     <AgoraFastboardVersion>1.8.1</AgoraFastboardVersion>
     <AgoraFastboardBindingRevision>2</AgoraFastboardBindingRevision>
     <!--

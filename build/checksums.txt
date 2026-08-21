@@ -23,7 +23,7 @@
 # <groupId>:<artifactId>:<version>  <sha256>
 com.github.netless-io:DSBridge-Android:nl_dsb_v3.0.4  fcd75ca02c2b105356e33b10dce62088babee8cfd9e119ddd6c02a26706b9d8b
 com.github.netless-io:fastboard-android:1.8.1  0554b62a1dc22844eff8bb6f2ca935f039ea8489a5d0dd2f4dfcd6d8cb2277f6
-com.github.netless-io:whiteboard-android:2.16.123  46d6210cf0411ffa1788b24e850466a8b0e2b7a564c90b2294e991a198e3518b
+com.github.netless-io:whiteboard-android:2.16.124  ec7ab79a37a0f1203f66dd10eb3d23b93f5fb8333fa7e13f70e3c9084493ab16
 io.agora.infra:aosl:1.3.5  e20092a5c28bbe72e3350dc6b1740979f624294d4de26139329a928a0df53f26
 io.agora.rtc:aiaec:4.6.3  40a9c8524935bd6d7e18de7dde52a9ae59d6a7172b875bcebf85b52b971edfb8
 io.agora.rtc:ains:4.6.3  25c06b355a2ae356a19e565a4e267b5f815edd20a2a8c068542ba5ecbb006fd5
