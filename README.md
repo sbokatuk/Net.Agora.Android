@@ -163,7 +163,7 @@ handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrap
 
 `samples/Net.Agora.Sample.Voice.Android` is its audio-only sibling against
 `Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
-reports, with no camera permission anywhere.
+reports, plus the same optional channel/token pair, with no camera permission anywhere.
 
 `samples/Net.Agora.Sample.Signaling.Android` drives `Agora.Rtm.RtmClient` on its own — a tiny chat
 room (log in, subscribe, publish, receive) written against the raw callback API, to show what the
