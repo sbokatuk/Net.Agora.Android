@@ -26,6 +26,11 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        SamplePrefill.Fill(AppIdEntry, "AppId");
+        SamplePrefill.Fill(UserIdEntry, "RtmUserId", secret: false);
+        SamplePrefill.Fill(ChannelEntry, "Channel", secret: false);
+        SamplePrefill.Fill(TokenEntry, "RtmToken");
     }
 
     private async void OnLoginClicked(object sender, EventArgs e)

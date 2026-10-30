@@ -199,6 +199,9 @@ cd /tmp && dotnet new globaljson --sdk-version 10.0.100 --force
 dotnet build <repo>/samples/Net.Agora.Sample.Android/Net.Agora.Sample.Android.csproj
 ```
 
+Every sample takes its credentials from entry fields, which a build can fill in for you: see
+`samples/Directory.Build.targets` for the `AgoraSample*` values. Nothing is filled in by default.
+
 `Net.Agora.Android.sln` deliberately contains the binding project and the tests but **not** the
 sample, so `dotnet build Net.Agora.Android.sln` does not require the MAUI workload.
 

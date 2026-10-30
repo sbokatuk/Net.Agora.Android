@@ -21,6 +21,8 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
+        SamplePrefill.Fill(AppIdEntry, "AppId");
+
         // Static, so it works before any engine exists — and proves the .aar is wired up the
         // moment the page appears.
         StatusLabel.Text = $"native SDK {RtcEngine.SdkVersion}";

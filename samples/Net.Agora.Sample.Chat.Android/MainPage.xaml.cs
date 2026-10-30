@@ -26,6 +26,11 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        SamplePrefill.Fill(AppKeyEntry, "ChatAppKey");
+        SamplePrefill.Fill(UsernameEntry, "ChatUser", secret: false);
+        SamplePrefill.Fill(PeerEntry, "ChatPeer", secret: false);
+        SamplePrefill.Fill(TokenEntry, "ChatToken");
     }
 
     private void OnLoginClicked(object sender, EventArgs e)
