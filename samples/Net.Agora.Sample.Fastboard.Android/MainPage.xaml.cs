@@ -17,10 +17,22 @@ namespace Net.Agora.Sample.Fastboard.Android;
 ///
 /// The three identifiers are the same three the plain Whiteboard sample uses: the App Identifier
 /// from the Agora Console under Interactive Whiteboard, and the room UUID and token from your own
-/// server's call to the whiteboard REST API.
+/// server's call to the whiteboard REST API. A room can only be joined from the region it was
+/// created in, so the region field has to match it; leave it empty for China.
 /// </summary>
 public partial class MainPage : ContentPage
 {
+    // The whiteboard service's own names for its regions. FastRegion is a Java enum whose constants
+    // are spelled differently (CN_HZ for cn-hz), so ValueOf can't take these.
+    private static readonly Dictionary<string, FastRegion> Regions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["cn-hz"] = FastRegion.CnHz!,
+        ["us-sv"] = FastRegion.UsSv!,
+        ["sg"] = FastRegion.Sg!,
+        ["in-mum"] = FastRegion.InMum!,
+        ["gb-lon"] = FastRegion.GbLon!,
+    };
+
     private FastRoom? _fastRoom;
     private bool _writable = true;
 
@@ -41,6 +53,16 @@ public partial class MainPage : ContentPage
             return;
         }
 
+        // CnHz (mainland China) is Fastboard's own default region; a production app picks whichever
+        // matches where its whiteboard room was created.
+        var region = FastRegion.CnHz!;
+        var regionKey = RegionEntry.Text?.Trim();
+        if (!string.IsNullOrEmpty(regionKey) && !Regions.TryGetValue(regionKey, out region))
+        {
+            Status($"unknown region: use {string.Join(", ", Regions.Keys)}");
+            return;
+        }
+
         if (Board.Board is not { } fastboardView)
         {
             Status("the board view has no native counterpart yet");
@@ -49,9 +71,7 @@ public partial class MainPage : ContentPage
 
         JoinButton.IsEnabled = false;
 
-        // CnHz (mainland China) is Fastboard's own default region; a production app picks whichever
-        // matches where its whiteboard room was created.
-        var options = new FastRoomOptions(appIdentifier, roomUuid, roomToken, "android-user", FastRegion.CnHz!);
+        var options = new FastRoomOptions(appIdentifier, roomUuid, roomToken, "android-user", region);
         // global:: because both "Agora.Fastboard.Fastboard" and the bare "Fastboard" this file's
         // "using Agora.Fastboard" would otherwise bring into scope are ambiguous here: this file's
         // own namespace starts with Net.Agora, and the binding assembly's generated resource
