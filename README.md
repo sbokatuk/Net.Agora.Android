@@ -2,7 +2,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/Net.Agora.Video.Android?label=nuget)](https://www.nuget.org/packages/Net.Agora.Video.Android)
 [![Targets: net8.0 | net9.0 | net10.0](https://img.shields.io/badge/targets-net8.0%20%7C%20net9.0%20%7C%20net10.0-512BD4)](#packages)
-[![full-rtc-basic 4.6.3](https://img.shields.io/badge/full--rtc--basic-4.6.3-099DFD)](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic)
+[![full-rtc-basic 4.6.4](https://img.shields.io/badge/full--rtc--basic-4.6.4-099DFD)](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
 
 .NET for Android and .NET MAUI bindings for Agora's native Android SDKs.

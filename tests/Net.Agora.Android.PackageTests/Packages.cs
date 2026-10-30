@@ -134,7 +134,8 @@ public static class Packages
         ("Net.Agora.Extensions.FaceCapture.Android", "full-face-capture-", 2_000_000),
         ("Net.Agora.Extensions.FaceDetection.Android", "full-face-detect-", 800_000),
         ("Net.Agora.Extensions.VideoQualityAnalyzer.Android", "full-vqa-", 1_500_000),
-        ("Net.Agora.Extensions.VideoEncoder.Android", "full-video-codec-enc-", 3_000_000),
+        // 1.9 MB from 4.6.4 on: Agora folded libvideo_enc.so into libagora_video_encoder_extension.so.
+        ("Net.Agora.Extensions.VideoEncoder.Android", "full-video-codec-enc-", 1_500_000),
         ("Net.Agora.Extensions.Av1Encoder.Android", "full-video-av1-codec-enc-", 2_000_000),
     ];
 
