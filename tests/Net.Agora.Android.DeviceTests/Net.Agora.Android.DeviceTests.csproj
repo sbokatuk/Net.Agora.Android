@@ -178,8 +178,11 @@
     Lifecycle.Process and Lifecycle.LiveData.Core still declare the 2.8.x upper bound they were
     published against. That is the documented cost of the direct-reference fix; chasing it with
     further pins only moves the warning to the next package in the graph.
+
+    Not on net8, whose graph has no such diamond since the bindings lowered WebKit, AppCompat and
+    RecyclerView there. The pin would only raise that graph above what a consumer gets.
   -->
-  <ItemGroup Condition=" '$(AgoraDevicePackage)' == 'Fastboard' ">
+  <ItemGroup Condition=" '$(AgoraDevicePackage)' == 'Fastboard' And '$(TargetFramework)' != 'net8.0-android34.0' ">
     <PackageReference Include="Xamarin.AndroidX.Lifecycle.Common" Version="2.9.2.1" />
   </ItemGroup>
 
