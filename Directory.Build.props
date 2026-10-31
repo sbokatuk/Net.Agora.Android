@@ -72,8 +72,8 @@
     -->
     <AgoraWhiteboardVersion>2.16.134</AgoraWhiteboardVersion>
     <AgoraWhiteboardBindingRevision>1</AgoraWhiteboardBindingRevision>
-    <AgoraFastboardVersion>1.8.1</AgoraFastboardVersion>
-    <AgoraFastboardBindingRevision>2</AgoraFastboardBindingRevision>
+    <AgoraFastboardVersion>1.8.2</AgoraFastboardVersion>
+    <AgoraFastboardBindingRevision>1</AgoraFastboardBindingRevision>
     <!--
       The default for projects that do not pick their own line (tests, and the Video binding
       itself); the Voice .csproj overrides this with its own pair.
