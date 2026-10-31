@@ -22,7 +22,7 @@ Two things change for net8 apps:
   `androidx.collection.ArraySet$ElementIterator`, or still build but raise Core to 1.16.0.2 and add `NU1608`
   warnings, depending on which ones you added.
 - **Non-MAUI net8 apps get older AndroidX.** A plain .NET for Android app goes from AppCompat 1.7.0.7,
-  RecyclerView 1.3.2.10 and Core 1.16.0.3 to 1.3.1.5, 1.2.1.9 and 1.9.0.2. That app still works, as tested
+  RecyclerView 1.3.2.10 and Core 1.16.0.3 to 1.3.1.5, 1.2.1.9 and 1.9.0.2. Such an app still works, as tested
   below, but one that relied on this package to bring newer AndroidX must now reference it directly.
 
 ### Breaking: room operations must run on the main thread
@@ -80,4 +80,5 @@ newer than .NET MAUI 9 pins and NU1107s any MAUI consumer.
 Before release, on Android emulators: device suites on net8 and net10 and with R8 shrinking. The sample
 joined a live room outside China with its toolbar working, drew strokes that appeared on an iOS client,
 switched to read-only and back, and left and rejoined. On net8 at these floors, a `dotnet new maui` app
-built with no duplicate classes and ran against that room, and so did a plain .NET for Android app.
+built with no duplicate classes and ran against that room. A plain .NET for Android app ran against that
+room at the same floors on Fastboard 1.8.1.
