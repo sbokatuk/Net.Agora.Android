@@ -161,6 +161,12 @@ public partial class MainPage : ContentPage
             {
                 owner._room = room;
 
+                // A room starts with serialization disabled, and in that state it keeps no history:
+                // OnCanUndoStepsUpdate never fires, however many strokes are drawn, and undo and
+                // redo do nothing. Enabling it needs every client in the room on SDK 2.9.3 or later
+                // (Web 2.9.2): upstream warns that app clients crash otherwise.
+                room?.DisableSerialization(false);
+
                 // Known Android-only bug, fixed the same way in Net.Agora's façade
                 // (Net.Agora.Whiteboard/Platforms/Android/AgoraWhiteboardClient.cs): the SDK's own
                 // page never gives its #root / #whiteboard-container a height — they sit under a
