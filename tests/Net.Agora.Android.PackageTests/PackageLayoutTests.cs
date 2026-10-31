@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace Net.Agora.Android.PackageTests;
 
 /// <summary>
@@ -136,5 +138,33 @@ public class PackageLayoutTests
 
         using var targets = new StreamReader(Packages.ReadEntry(package, $"buildTransitive/{packageId}.targets"));
         Assert.Contains("ProguardConfiguration", targets.ReadToEnd());
+    }
+
+    [Theory]
+    [InlineData(Packages.Whiteboard, "Xamarin.AndroidX.WebKit", "1.8.0.2")]
+    [InlineData(Packages.Fastboard, "Xamarin.AndroidX.AppCompat", "1.6.1.5")]
+    [InlineData(Packages.Fastboard, "Xamarin.AndroidX.RecyclerView", "1.3.1.2")]
+    public void Net8_floor_stays_below_the_androidx_ktx_move(string packageId, string dependency, string firstThatCollides)
+    {
+        using var package = Packages.OpenPackage(packageId);
+        using var reader = new StreamReader(Packages.ReadEntry(package, $"{packageId}.nuspec"));
+        var root = XDocument.Load(reader).Root!;
+        var ns = root.Name.Namespace;
+
+        var floor = root.Descendants(ns + "group")
+            .Single(group => (string?)group.Attribute("targetFramework") == "net8.0-android34.0")
+            .Elements(ns + "dependency")
+            .Single(entry => (string?)entry.Attribute("id") == dependency)
+            .Attribute("version")!.Value;
+
+        // firstThatCollides is the first version that asks for Core 1.12.0.2, which brings
+        // Collection 1.3, past the point where AndroidX moved Collection.Ktx's classes into the base
+        // artifact. MAUI 8 still asks for the old Collection.Ktx, and it is the last MAUI on net8,
+        // so an app on this floor gets those classes twice and D8 fails. Nothing else fails first:
+        // the binding packs, its device tests pass, and CI builds no MAUI app on net8.
+        Assert.True(
+            Version.Parse(floor) < Version.Parse(firstThatCollides),
+            $"{packageId} asks for {dependency} {floor} on net8, which breaks every net8 MAUI app " +
+            $"that references it: the limit is below {firstThatCollides}. See the comment on the pin.");
     }
 }
