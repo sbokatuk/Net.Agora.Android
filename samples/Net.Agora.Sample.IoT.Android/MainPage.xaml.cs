@@ -25,6 +25,9 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        SamplePrefill.Fill(AppIdEntry, "AppId");
+        SamplePrefill.Fill(ProjectIdEntry, "IoTProjectId");
     }
 
     private void OnInitClicked(object sender, EventArgs e)

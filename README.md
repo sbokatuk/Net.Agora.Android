@@ -2,7 +2,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/Net.Agora.Video.Android?label=nuget)](https://www.nuget.org/packages/Net.Agora.Video.Android)
 [![Targets: net8.0 | net9.0 | net10.0](https://img.shields.io/badge/targets-net8.0%20%7C%20net9.0%20%7C%20net10.0-512BD4)](#packages)
-[![full-rtc-basic 4.6.3](https://img.shields.io/badge/full--rtc--basic-4.6.3-099DFD)](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic)
+[![full-rtc-basic 4.6.4](https://img.shields.io/badge/full--rtc--basic-4.6.4-099DFD)](https://central.sonatype.com/artifact/io.agora.rtc/full-rtc-basic)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
 
 .NET for Android and .NET MAUI bindings for Agora's native Android SDKs.
@@ -163,7 +163,7 @@ handler (see its `AgoraVideoView.cs` for why a custom handler rather than a wrap
 
 `samples/Net.Agora.Sample.Voice.Android` is its audio-only sibling against
 `Net.Agora.Voice.Android`: capture, mute, speakerphone routing and the who-is-speaking volume
-reports, with no camera permission anywhere.
+reports, plus the same optional channel/token pair, with no camera permission anywhere.
 
 `samples/Net.Agora.Sample.Signaling.Android` drives `Agora.Rtm.RtmClient` on its own — a tiny chat
 room (log in, subscribe, publish, receive) written against the raw callback API, to show what the
@@ -198,6 +198,9 @@ directory:
 cd /tmp && dotnet new globaljson --sdk-version 10.0.100 --force
 dotnet build <repo>/samples/Net.Agora.Sample.Android/Net.Agora.Sample.Android.csproj
 ```
+
+Every sample takes its credentials from entry fields, which a build can fill in for you: see
+`samples/Directory.Build.targets` for the `AgoraSample*` values. Nothing is filled in by default.
 
 `Net.Agora.Android.sln` deliberately contains the binding project and the tests but **not** the
 sample, so `dotnet build Net.Agora.Android.sln` does not require the MAUI workload.

@@ -39,6 +39,11 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        SamplePrefill.Fill(AppIdentifierEntry, "WhiteboardAppIdentifier");
+        SamplePrefill.Fill(RegionEntry, "WhiteboardRegion", secret: false);
+        SamplePrefill.Fill(RoomUuidEntry, "WhiteboardRoomUuid");
+        SamplePrefill.Fill(RoomTokenEntry, "WhiteboardRoomToken");
     }
 
     private void OnJoinClicked(object sender, EventArgs e)

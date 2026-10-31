@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    Build-time prefill for live checks. Every sample takes its credentials from entry fields, which
+    are slow and unreliable to type into on an emulator, so a build can carry them instead: set the
+    AgoraSample* values below and the fields start filled in, secrets masked.
+
+    Put them in the build's environment rather than on the command line. MSBuild reads environment
+    variables as properties, and that keeps the values out of the process list and the build log.
+
+    Nothing is set by default and no value is ever committed, so an ordinary build, CI's included,
+    carries none of this and the fields start empty. A value given to a build does end up inside
+    that APK, so never give one to a build that will leave your machine.
+  -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AgoraSample.AppId" Value="$(AgoraSampleAppId)" Condition=" '$(AgoraSampleAppId)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.Channel" Value="$(AgoraSampleChannel)" Condition=" '$(AgoraSampleChannel)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.Token" Value="$(AgoraSampleToken)" Condition=" '$(AgoraSampleToken)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.RtmUserId" Value="$(AgoraSampleRtmUserId)" Condition=" '$(AgoraSampleRtmUserId)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.RtmToken" Value="$(AgoraSampleRtmToken)" Condition=" '$(AgoraSampleRtmToken)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.ChatAppKey" Value="$(AgoraSampleChatAppKey)" Condition=" '$(AgoraSampleChatAppKey)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.ChatUser" Value="$(AgoraSampleChatUser)" Condition=" '$(AgoraSampleChatUser)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.ChatPeer" Value="$(AgoraSampleChatPeer)" Condition=" '$(AgoraSampleChatPeer)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.ChatToken" Value="$(AgoraSampleChatToken)" Condition=" '$(AgoraSampleChatToken)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.WhiteboardAppIdentifier" Value="$(AgoraSampleWhiteboardAppIdentifier)" Condition=" '$(AgoraSampleWhiteboardAppIdentifier)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.WhiteboardRegion" Value="$(AgoraSampleWhiteboardRegion)" Condition=" '$(AgoraSampleWhiteboardRegion)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.WhiteboardRoomUuid" Value="$(AgoraSampleWhiteboardRoomUuid)" Condition=" '$(AgoraSampleWhiteboardRoomUuid)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.WhiteboardRoomToken" Value="$(AgoraSampleWhiteboardRoomToken)" Condition=" '$(AgoraSampleWhiteboardRoomToken)' != '' " />
+    <AssemblyMetadata Include="AgoraSample.IoTProjectId" Value="$(AgoraSampleIoTProjectId)" Condition=" '$(AgoraSampleIoTProjectId)' != '' " />
+
+    <Compile Include="$(MSBuildThisFileDirectory)shared/SamplePrefill.cs" Link="SamplePrefill.cs" />
+  </ItemGroup>
+
+</Project>

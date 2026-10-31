@@ -3,11 +3,12 @@ using Agora.Rtc;
 namespace Net.Agora.Sample.Voice.Android;
 
 /// <summary>
-/// Creates <see cref="RtcEngine"/> directly against the raw Voice binding and drives the local
-/// audio surface — capture, mute, speakerphone routing, who-is-speaking volume reports.
-/// Deliberately minimal: no channel is joined, so it runs with nothing but an App ID — the full
-/// join/publish/subscribe flow, wrapped behind a cross-platform API, is
-/// Net.Agora/samples/Net.Agora.Sample.Voice in the façade repository.
+/// Creates <see cref="RtcEngine"/> directly against the raw Voice binding and drives the audio
+/// surface — capture, mute, speakerphone routing, who-is-speaking volume reports. Channel and token
+/// are optional, as in Net.Agora.Sample.Android: left blank this runs on nothing but an App ID;
+/// entered, it joins that channel too, same flow as Net.Agora.Sample.Voice.iOS. The same flow
+/// wrapped behind a cross-platform API is Net.Agora/samples/Net.Agora.Sample.Voice in the façade
+/// repository.
 ///
 /// The voice .aar carries the same Java API layer as the full one (video entry points included);
 /// what it lacks is the native video pipeline — which is the size win a voice-only app picks
@@ -20,6 +21,10 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        SamplePrefill.Fill(AppIdEntry, "AppId");
+        SamplePrefill.Fill(ChannelEntry, "Channel", secret: false);
+        SamplePrefill.Fill(TokenEntry, "Token");
 
         // Static, so it works before any engine exists — and proves the .aar is wired up the
         // moment the page appears.
@@ -66,14 +71,38 @@ public partial class MainPage : ContentPage
         // thread explicitly (Append does its own hop).
         engine.Error += (_, error) =>
             Append($"error {error.Code}: {RtcEngine.GetErrorDescription(error.Code)}");
+        engine.JoinChannelSuccess += (_, ev) => Append($"joined channel {ev.Channel}, uid {ev.Uid}");
+        engine.UserJoined += (_, ev) => Append($"remote user joined: {ev.Uid}");
+        engine.UserOffline += (_, ev) => Append($"remote user left: {ev.Uid}");
         engine.AudioVolumeIndication += (_, volume) => MainThread.BeginInvokeOnMainThread(() =>
-            VolumeLabel.Text = $"local volume {volume.Speakers?.FirstOrDefault()?.Volume ?? 0} (total {volume.TotalVolume})");
+        {
+            // Uid 0 is this device. The SDK reports the loudest speakers, silent ones included.
+            var speaking = (volume.Speakers ?? [])
+                .Where(speaker => speaker.Volume > 0)
+                .Select(speaker => speaker.Uid == 0 ? $"you ({speaker.Volume})" : $"{speaker.Uid} ({speaker.Volume})")
+                .ToList();
+            VolumeLabel.Text = speaking.Count > 0
+                ? $"speaking: {string.Join(", ", speaking)}"
+                : "nobody is speaking";
+        });
 
         // Raw surface: every call answers an Agora error code, 0 for success — the façade hides
         // this. EnableAudio spins the capture pipeline up; the volume indication cadence drives
         // the who-is-speaking label (uid 0 is this device).
         engine.EnableAudio();
         engine.EnableAudioVolumeIndication(200, 3, false);
+
+        var channel = ChannelEntry.Text?.Trim();
+        if (!string.IsNullOrEmpty(channel))
+        {
+            // 1 is CLIENT_ROLE_BROADCASTER. Without it this JoinChannel overload joins as Audience,
+            // which publishes nothing and never hears of other Audience members. See
+            // Net.Agora.Sample.Android's OnStartPreviewClicked for the long version.
+            engine.SetClientRole(1);
+
+            var joinResult = engine.JoinChannel(TokenEntry.Text?.Trim(), channel, optionalInfo: null, uid: 0);
+            Append(joinResult == 0 ? $"joining {channel}…" : $"JoinChannel returned {joinResult}");
+        }
 
         _engine = engine;
         SetRunning(true);
@@ -110,6 +139,7 @@ public partial class MainPage : ContentPage
     {
         // Destroy is static because the engine is a process-wide singleton; it blocks until the
         // native side has torn down.
+        _engine?.LeaveChannel();
         RtcEngine.Destroy();
         _engine = null;
     }
