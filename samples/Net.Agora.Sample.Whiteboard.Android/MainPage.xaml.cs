@@ -1,5 +1,7 @@
 using Agora.Whiteboard;
 using Agora.Whiteboard.Domain;
+// Microsoft.Maui.Controls, one of the implicit usings, has a Region of its own.
+using Region = Agora.Whiteboard.Domain.Region;
 
 namespace Net.Agora.Sample.Whiteboard.Android;
 
@@ -13,10 +15,27 @@ namespace Net.Agora.Sample.Whiteboard.Android;
 ///
 /// The three identifiers come from two different places. The App Identifier is in the Agora
 /// Console under Interactive Whiteboard; the room UUID and its token come from your own server's
-/// call to the whiteboard REST API, because minting them needs a secret an app must not carry.
+/// call to the whiteboard REST API, because minting them needs a secret an app must not carry. A
+/// room can only be joined from the region it was created in, so the region field has to match it;
+/// leave it empty for China.
 /// </summary>
 public partial class MainPage : ContentPage
 {
+    // The whiteboard service's own names for its regions, which is what these serialise to. Region
+    // is a Java enum whose constants are spelled differently (cn for cn-hz), so ValueOf can't take
+    // these.
+    private static readonly Dictionary<string, Region> Regions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["cn-hz"] = Region.Cn!,
+        ["us-sv"] = Region.Us!,
+        ["sg"] = Region.Sg!,
+        ["in-mum"] = Region.InMum!,
+        // Deprecated upstream with no replacement named; Fastboard still converts its own GbLon to it.
+#pragma warning disable CS0618
+        ["gb-lon"] = Region.GbLon!,
+#pragma warning restore CS0618
+    };
+
     private Room? _room;
     private RoomCallbacks? _callbacks;
 
@@ -37,6 +56,14 @@ public partial class MainPage : ContentPage
             return;
         }
 
+        Region? region = null;
+        var regionKey = RegionEntry.Text?.Trim();
+        if (!string.IsNullOrEmpty(regionKey) && !Regions.TryGetValue(regionKey, out region))
+        {
+            Status($"unknown region: use {string.Join(", ", Regions.Keys)}");
+            return;
+        }
+
         if (Board.Board is not { } boardView)
         {
             Status("the board view has no native counterpart yet");
@@ -46,8 +73,17 @@ public partial class MainPage : ContentPage
         JoinButton.IsEnabled = false;
 
         var config = new WhiteSdkConfiguration(appIdentifier);
-        var sdk = new WhiteSdk(boardView, global::Android.App.Application.Context, config);
         var roomParams = new RoomParams(roomUuid, roomToken, "android-user");
+
+        // A room can only be joined from the region it was created in. Left empty, the SDK uses its
+        // default.
+        if (region is not null)
+        {
+            config.Region = region;
+            roomParams.Region = region;
+        }
+
+        var sdk = new WhiteSdk(boardView, global::Android.App.Application.Context, config);
         _callbacks = new RoomCallbacks(this);
 
         sdk.JoinRoom(roomParams, _callbacks, new JoinPromise(this));
