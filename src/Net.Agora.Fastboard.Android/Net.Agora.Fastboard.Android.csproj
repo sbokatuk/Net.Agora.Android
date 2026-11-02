@@ -53,10 +53,25 @@
     on AndroidX Fragment 1.8.8, which requires Lifecycle.LiveData.Core 2.9.2 — and .NET MAUI 9 pins
     Lifecycle.LiveData to 2.8.7, so any MAUI app referencing this package fails to restore with
     NU1107. The 1.7.0 line stays inside MAUI's own AndroidX graph. Revisit when MAUI moves.
+
+    net8 is lower again, for the reason WebKit is in the Whiteboard binding: anything that raises
+    the AndroidX base packages past MAUI 8's -ktx packages fails D8 on duplicate classes. AppCompat
+    1.6.1.5 and later do that, and so does RecyclerView 1.3.1.2 and later, so both have to stay
+    down; lowering only one of them leaves the failure in place. The POM asks for appcompat 1.2.0
+    and recyclerview 1.1.0, which NuGet has as MonoAndroid only, so these are the newest revisions
+    of the lowest lines that have a .NET asset. net9 and net10 keep the pins above.
+    PackageLayoutTests holds the net8 pins below those limits.
   -->
+  <PropertyGroup>
+    <AgoraAppCompatVersion>1.7.0.7</AgoraAppCompatVersion>
+    <AgoraAppCompatVersion Condition=" '$(TargetFramework)' == 'net8.0-android34.0' ">1.3.1.5</AgoraAppCompatVersion>
+    <AgoraRecyclerViewVersion>1.3.2.10</AgoraRecyclerViewVersion>
+    <AgoraRecyclerViewVersion Condition=" '$(TargetFramework)' == 'net8.0-android34.0' ">1.2.1.9</AgoraRecyclerViewVersion>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.7.0.7" />
-    <PackageReference Include="Xamarin.AndroidX.RecyclerView" Version="1.3.2.10" />
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="$(AgoraAppCompatVersion)" />
+    <PackageReference Include="Xamarin.AndroidX.RecyclerView" Version="$(AgoraRecyclerViewVersion)" />
     <PackageReference Include="Xamarin.Jetbrains.Annotations" Version="26.0.2.3" />
     <PackageReference Include="GoogleGson" Version="2.13.2" />
   </ItemGroup>

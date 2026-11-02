@@ -35,11 +35,28 @@
     its most recent release, and this repository still ships net8 deliberately — so the pins are
     the newest of each that still carries a net8 asset. They also carry net10 but no net9, which
     NuGet resolves by falling back to net8 for the middle band.
+
+    WebKit is the exception, on net8 only. MAUI 8.0.100, the last MAUI for net8, still asks for the
+    -ktx packages from before AndroidX moved their classes into the base artifacts. WebKit 1.8.0.2
+    and later raise Core far enough to pull Collection past that move, and from 1.11.0.3 on
+    Lifecycle.Runtime too, so the same classes reach the app twice and D8 fails with "Type
+    androidx.collection.ArrayMapKt is defined multiple times". That rules out every WebKit that has
+    a net8 asset. The POM asks for webkit 1.1.0, and NuGet's 1.1.0 is MonoAndroid only, so this is
+    the newest revision of the lowest line that has a .NET asset. It stays below MAUI 8's Core, so
+    it raises nothing in a MAUI app. net9 and net10 keep the newer pin: MAUI 9 and 10 ask for the
+    empty -ktx packages themselves. PackageLayoutTests holds the net8 pin below that limit.
+
+    Compared literally for the reason given in src/Agora.Binding.props.
   -->
+  <PropertyGroup>
+    <AgoraWebKitVersion>1.14.0.1</AgoraWebKitVersion>
+    <AgoraWebKitVersion Condition=" '$(TargetFramework)' == 'net8.0-android34.0' ">1.4.0.8</AgoraWebKitVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Square.OkHttp3" Version="5.3.0" />
     <PackageReference Include="GoogleGson" Version="2.13.2" />
-    <PackageReference Include="Xamarin.AndroidX.WebKit" Version="1.14.0.1" />
+    <PackageReference Include="Xamarin.AndroidX.WebKit" Version="$(AgoraWebKitVersion)" />
     <PackageReference Include="Xamarin.AndroidX.Annotation" Version="1.9.1.5" />
   </ItemGroup>
 

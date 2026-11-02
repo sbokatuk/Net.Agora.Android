@@ -15,10 +15,10 @@
       The fourth component belongs to this repository and increments whenever the binding or
       packaging changes while the native artifact stays put.
     -->
-    <AgoraVideoVersion>4.6.3</AgoraVideoVersion>
-    <AgoraVideoBindingRevision>5</AgoraVideoBindingRevision>
-    <AgoraVoiceVersion>4.6.3</AgoraVoiceVersion>
-    <AgoraVoiceBindingRevision>5</AgoraVoiceBindingRevision>
+    <AgoraVideoVersion>4.6.4</AgoraVideoVersion>
+    <AgoraVideoBindingRevision>1</AgoraVideoBindingRevision>
+    <AgoraVoiceVersion>4.6.4</AgoraVoiceVersion>
+    <AgoraVoiceBindingRevision>1</AgoraVoiceBindingRevision>
     <!--
       Signaling (RTM) is a different product with its own native version line — 2.2.x, nothing to
       do with the RTC 4.6.x line above. See build/BuildNugets.sh for how releases handle packages
