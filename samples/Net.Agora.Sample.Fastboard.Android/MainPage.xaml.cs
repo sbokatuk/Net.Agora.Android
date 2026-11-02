@@ -96,8 +96,9 @@ public partial class MainPage : ContentPage
 
     private void OnLeaveClicked(object sender, EventArgs e)
     {
+        // Disconnect, not Destroy: FastRoom.Destroy also destroys the WebView inside Board, and the
+        // next Join needs that same view. Destroy is for when the view itself goes away.
         _fastRoom?.Disconnect();
-        _fastRoom?.Destroy();
         _fastRoom = null;
 
         Status("left the room");
